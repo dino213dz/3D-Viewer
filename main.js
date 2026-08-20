@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.6';
+const APP_VERSION = '1.7.7';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1182,6 +1182,17 @@ document.getElementById('menu-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('toolbar-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('menu-redo')?.addEventListener('click', onRedoClick);
 document.getElementById('toolbar-redo')?.addEventListener('click', onRedoClick);
+document.getElementById('toolbar-mats')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  showSection('sec-mats', 'Matériaux');
+  refreshMaterialSelect();
+});
+document.getElementById('toolbar-lights')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  showSection('sec-lights', 'Lumières');
+});
 document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();

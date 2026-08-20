@@ -797,3 +797,11 @@ svg.ico {
 .props-body .prop-value { font-weight: 600; text-align: right; word-break: break-all; }
 .props-body .muted { color: var(--muted); }
 .menu-dropdown-wide { min-width: 240px; }
+
+.toolbar-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255,255,255,0.18);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
