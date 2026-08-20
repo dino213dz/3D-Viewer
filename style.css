@@ -846,17 +846,18 @@ svg.ico {
   color: var(--accent);
 }
 
-/* Boutons barre : actif (fenêtre ouverte) = vert Xbox */
+/* Boutons barre : actif (fenêtre ouverte) = bleu accent menu */
 .toolbar-btn.is-active {
-  background: rgba(61, 211, 44, 0.22);
-  color: #3DD32C;
-  box-shadow: 0 0 0 1px rgba(61, 211, 44, 0.45);
+  background: rgba(103, 97, 255, 0.28);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(103, 97, 255, 0.55);
 }
 .toolbar-btn.is-active svg.ico {
-  color: #3DD32C;
+  color: #fff;
 }
 .toolbar-btn.is-active:hover {
-  background: rgba(61, 211, 44, 0.35);
+  background: var(--accent);
+  color: #fff;
 }
 
 /* Bulles (tooltips) sur boutons barre de menu */
@@ -904,3 +905,35 @@ svg.ico {
 .toolbar-btn[data-tip]:hover::before {
   transform: translateX(-50%);
 }
+
+.about-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 14px;
+}
+.about-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.mat-pick-bubble {
+  position: fixed;
+  z-index: 90;
+  padding: 6px 12px;
+  background: rgba(20, 22, 28, 0.94);
+  color: #e8eaed;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(103, 97, 255, 0.45);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+  max-width: min(260px, 80vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mat-pick-bubble.hidden { display: none !important; }

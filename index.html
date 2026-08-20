@@ -18,6 +18,7 @@
 <body>
   <div id="app">
     <canvas id="c"></canvas>
+    <div id="mat-pick-bubble" class="mat-pick-bubble hidden" role="status"></div>
 
     <!-- Menu barre style macOS -->
     <nav id="menubar">
@@ -252,7 +253,10 @@
         <button type="button" class="modal-close" id="about-close">×</button>
         <h2>À propos — 3D Viewer</h2>
         <div class="about-body">
-          <p><strong>Version</strong> : <span id="about-version">1.7.9</span></p>
+          <div class="about-logo-wrap">
+            <img src="logo-dino213dz.png" alt="Logo dino213dz" class="about-logo" width="96" height="96" />
+          </div>
+          <p><strong>Version</strong> : <span id="about-version">2.0.0</span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">20 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>

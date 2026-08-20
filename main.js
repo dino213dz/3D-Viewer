@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.9';
+const APP_VERSION = '2.0.0';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1815,18 +1815,24 @@ function collectMaterials() {
   currentModel.traverse((child) => {
     if (!child.isMesh || !child.material) return;
     const mats = Array.isArray(child.material) ? child.material : [child.material];
-    mats.forEach((m, mi) => {
-      // Use object identity as key
+    mats.forEach((m) => {
       let entry = map.get(m);
       if (!entry) {
-        const label = m.name || child.userData?.matName || child.name || (`Matériau ${++autoIdx}`);
-        if (!m.name) m.name = label;
-        entry = { key: String(map.size), label, material: m, meshes: [] };
+        const base = (m.name || child.userData?.matName || child.name || (`Matériau ${++autoIdx}`)).trim();
+        if (!m.name) m.name = base;
+        entry = { key: String(map.size), baseLabel: base, label: base, material: m, meshes: [] };
         map.set(m, entry);
         materialEntries.push(entry);
       }
       if (!entry.meshes.includes(child)) entry.meshes.push(child);
     });
+  });
+  // Ordre alphabétique sur le nom de base
+  materialEntries.sort((a, b) => a.baseLabel.localeCompare(b.baseLabel, 'fr', { sensitivity: 'base' }));
+  // Numérotation 1-Nom, 2-Nom...
+  materialEntries.forEach((e, i) => {
+    e.label = (i + 1) + '-' + e.baseLabel;
+    e.key = String(i);
   });
   return materialEntries;
 }
@@ -1834,8 +1840,8 @@ function collectMaterials() {
 function refreshMaterialSelect(preserveLabel = true) {
   const sel = document.getElementById('mat-select');
   if (!sel) return;
-  const prevLabel = preserveLabel && sel.selectedOptions[0]
-    ? sel.selectedOptions[0].textContent
+  const prevBase = preserveLabel && sel.selectedOptions[0]
+    ? (sel.selectedOptions[0].dataset.base || sel.selectedOptions[0].textContent)
     : null;
   collectMaterials();
   sel.innerHTML = '';
@@ -1847,11 +1853,12 @@ function refreshMaterialSelect(preserveLabel = true) {
     const opt = document.createElement('option');
     opt.value = String(i);
     opt.textContent = e.label;
+    opt.dataset.base = e.baseLabel;
     sel.appendChild(opt);
   });
   let idx = 0;
-  if (prevLabel) {
-    const found = materialEntries.findIndex((e) => e.label === prevLabel);
+  if (prevBase) {
+    const found = materialEntries.findIndex((e) => e.baseLabel === prevBase || e.label === prevBase);
     if (found >= 0) idx = found;
   }
   sel.value = String(idx);
@@ -2037,6 +2044,92 @@ function applyMaterialsFromUI(applyAll = false) {
   refreshMaterialSelect(true);
   scheduleSavePrefs();
 }
+
+
+// ===== Clic objet 3D → nom du matériau =====
+const pickRaycaster = new THREE.Raycaster();
+const pickPointer = new THREE.Vector2();
+let matBubbleTimer = null;
+
+function showMatPickBubble(text, clientX, clientY) {
+  const el = document.getElementById('mat-pick-bubble');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('hidden');
+  const pad = 12;
+  const rect = el.getBoundingClientRect();
+  let x = clientX + 14;
+  let y = clientY + 14;
+  if (x + rect.width > window.innerWidth - pad) x = clientX - rect.width - 10;
+  if (y + rect.height > window.innerHeight - pad) y = clientY - rect.height - 10;
+  el.style.left = Math.max(pad, x) + 'px';
+  el.style.top = Math.max(pad, y) + 'px';
+  clearTimeout(matBubbleTimer);
+  matBubbleTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+}
+
+function onCanvasPointerClick(e) {
+  if (!currentModel) return;
+  // ignorer drag orbit : petit mouvement seulement
+  if (e.target !== canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  pickPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  pickRaycaster.setFromCamera(pickPointer, camera);
+  const hits = pickRaycaster.intersectObject(currentModel, true);
+  if (!hits.length) return;
+  const hit = hits[0];
+  const mesh = hit.object;
+  if (!mesh.isMesh || !mesh.material) return;
+
+  let mat = mesh.material;
+  if (Array.isArray(mat)) {
+    // face index → groupe matériau si possible
+    const fi = hit.faceIndex;
+    mat = mat[0];
+    if (mesh.geometry?.groups?.length && fi != null) {
+      for (const g of mesh.geometry.groups) {
+        if (fi * 3 >= g.start && fi * 3 < g.start + g.count) {
+          mat = mesh.material[g.materialIndex] || mat;
+          break;
+        }
+      }
+    }
+  }
+
+  collectMaterials();
+  let entry = materialEntries.find((e) => e.material === mat);
+  if (!entry) {
+    // fallback : premier entry qui référence ce mesh
+    entry = materialEntries.find((e) => e.meshes.includes(mesh));
+  }
+  const name = entry ? entry.label : (mat.name || mesh.name || 'Matériau');
+  showMatPickBubble(name, e.clientX, e.clientY);
+  setStatus('Matériau : ' + name);
+
+  if (entry) {
+    const sel = document.getElementById('mat-select');
+    const idx = materialEntries.indexOf(entry);
+    if (sel && idx >= 0) {
+      sel.value = String(idx);
+      loadMaterialToUI(idx);
+    }
+  }
+}
+
+let pointerDownPos = null;
+canvas.addEventListener('pointerdown', (e) => {
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (!pointerDownPos) return;
+  const dx = e.clientX - pointerDownPos.x;
+  const dy = e.clientY - pointerDownPos.y;
+  pointerDownPos = null;
+  if (Math.hypot(dx, dy) > 6) return; // drag → pas un clic
+  onCanvasPointerClick(e);
+});
+
 
 document.getElementById('mat-select')?.addEventListener('change', (e) => {
   const i = parseInt(e.target.value, 10);
