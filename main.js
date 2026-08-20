@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -191,29 +191,40 @@ let skipLightUndo = false;
 
 // ========== Historique Annuler (illimité) ==========
 const undoStack = [];
+const redoStack = [];
+
+function setHistoryBtn(btn, n, baseLabel) {
+  if (!btn) return;
+  const ico = btn.querySelector('svg.ico');
+  const label = n ? (' ' + baseLabel + ' (' + n + ')') : (' ' + baseLabel);
+  btn.textContent = '';
+  if (ico) btn.appendChild(ico);
+  btn.appendChild(document.createTextNode(label));
+  btn.classList.toggle('is-disabled', n === 0);
+  btn.style.opacity = n ? '1' : '0.45';
+}
 
 function updateUndoMenu() {
-  const n = undoStack.length;
-  const btn = document.getElementById('menu-undo');
-  if (btn) {
-    const label = n ? (' Annuler (' + n + ')') : ' Annuler';
-    // garder l'icône SVG si présente
-    const ico = btn.querySelector('svg.ico');
-    btn.textContent = '';
-    if (ico) btn.appendChild(ico);
-    btn.appendChild(document.createTextNode(label));
-    btn.classList.toggle('is-disabled', n === 0);
-    btn.style.opacity = n ? '1' : '0.45';
+  const nu = undoStack.length;
+  const nr = redoStack.length;
+  setHistoryBtn(document.getElementById('menu-undo'), nu, 'Annuler');
+  setHistoryBtn(document.getElementById('menu-redo'), nr, 'Refaire');
+  const tbU = document.getElementById('toolbar-undo');
+  if (tbU) {
+    tbU.classList.toggle('disabled', nu === 0);
+    tbU.title = nu ? ('Annuler (' + nu + ') — Ctrl+Z') : 'Rien à annuler';
   }
-  const tb = document.getElementById('toolbar-undo');
-  if (tb) {
-    tb.classList.toggle('disabled', n === 0);
-    tb.title = n ? ('Annuler (' + n + ') — Ctrl+Z') : 'Rien à annuler';
+  const tbR = document.getElementById('toolbar-redo');
+  if (tbR) {
+    tbR.classList.toggle('disabled', nr === 0);
+    tbR.title = nr ? ('Refaire (' + nr + ') — Ctrl+Y') : 'Rien à refaire';
   }
 }
 
 function pushUndo(entry) {
   undoStack.push(entry);
+  // Nouvelle action : on ne peut plus refaire la branche abandonnée
+  redoStack.length = 0;
   updateUndoMenu();
 }
 
@@ -288,17 +299,47 @@ function applyLightState(entry, st) {
 
 function performUndo() {
   const entry = undoStack.pop();
-  updateUndoMenu();
   if (!entry) {
+    updateUndoMenu();
     setStatus('Rien à annuler.', true);
     return;
   }
   try {
     entry.undo();
+    redoStack.push(entry);
+    updateUndoMenu();
     setStatus('Annulé : ' + (entry.label || 'action'));
   } catch (err) {
     console.error(err);
+    updateUndoMenu();
     setStatus("Échec de l'annulation", true);
+  }
+}
+
+function performRedo() {
+  const entry = redoStack.pop();
+  if (!entry) {
+    updateUndoMenu();
+    setStatus('Rien à refaire.', true);
+    return;
+  }
+  try {
+    if (typeof entry.redo === 'function') {
+      entry.redo();
+    } else if (typeof entry.undo === 'function') {
+      // fallback : rejouer n'est pas possible sans redo
+      setStatus('Cette action ne peut pas être refaite.', true);
+      undoStack.push(entry);
+      updateUndoMenu();
+      return;
+    }
+    undoStack.push(entry);
+    updateUndoMenu();
+    setStatus('Refait : ' + (entry.label || 'action'));
+  } catch (err) {
+    console.error(err);
+    updateUndoMenu();
+    setStatus("Échec du refaire", true);
   }
 }
 
@@ -860,20 +901,33 @@ function onUndoClick(e) {
   performUndo();
   collapseMenus();
 }
+function onRedoClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  performRedo();
+  collapseMenus();
+}
 document.getElementById('menu-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('toolbar-undo')?.addEventListener('click', onUndoClick);
+document.getElementById('menu-redo')?.addEventListener('click', onRedoClick);
+document.getElementById('toolbar-redo')?.addEventListener('click', onRedoClick);
 document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
   doFrame();
 });
-// Raccourci Ctrl/Cmd+Z
+// Raccourcis : Ctrl/Cmd+Z annuler, Ctrl/Cmd+Y ou Shift+Z refaire
 document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) {
     e.preventDefault();
     performUndo();
+  } else if (k === 'y' || (k === 'z' && e.shiftKey)) {
+    e.preventDefault();
+    performRedo();
   }
 });
 document.getElementById('menu-frame')?.addEventListener('click', doFrame);
@@ -1003,12 +1057,20 @@ function addLight(type) {
   setStatus(`Lumière ${type.replace('Light', '')} ajoutée (positionnée autour du modèle).`);
   if (!skipLightUndo) {
     const addedId = id;
+    const st = captureLightState(entry);
     pushUndo({
       label: 'Ajout lumière ' + type.replace('Light', ''),
       undo: () => {
         skipLightUndo = true;
         removeLight(addedId);
         skipLightUndo = false;
+      },
+      redo: () => {
+        skipLightUndo = true;
+        addLight(st.type);
+        skipLightUndo = false;
+        const last = lights[lights.length - 1];
+        if (last && st) applyLightState(last, st);
       },
     });
   }
@@ -1038,6 +1100,15 @@ function removeLight(id) {
         skipLightUndo = false;
         const last = lights[lights.length - 1];
         if (last) applyLightState(last, st);
+      },
+      redo: () => {
+        // refaire = supprimer à nouveau la dernière lumière du même type/état au mieux
+        const match = lights.find((l) => l.type === st.type);
+        if (match) {
+          skipLightUndo = true;
+          removeLight(match.id);
+          skipLightUndo = false;
+        }
       },
     });
   }
@@ -1124,15 +1195,22 @@ function buildLightCard(entry) {
       if (armed) return;
       armed = true;
       const before = captureLightState(entry);
+      const afterRef = { st: null };
+      const captureAfter = () => { afterRef.st = captureLightState(entry); };
+      entry.card?.addEventListener('pointerup', captureAfter, { once: true });
+      entry.card?.addEventListener('change', captureAfter, { once: true });
       pushUndo({
         label: 'Modif. lumière #' + id,
         undo: () => {
           const cur = lights.find((l) => l.id === id);
           if (cur) applyLightState(cur, before);
         },
+        redo: () => {
+          const cur = lights.find((l) => l.id === id);
+          if (cur && afterRef.st) applyLightState(cur, afterRef.st);
+        },
       });
-      // ré-armer après la fin du geste (change/pointerup)
-      setTimeout(() => { armed = false; }, 800);
+      setTimeout(() => { armed = false; captureAfter(); }, 800);
     };
   })();
 
@@ -1358,10 +1436,6 @@ function resetMaterialsToOriginal() {
     return;
   }
   const matSnap = snapshotAllMaterials();
-  pushUndo({
-    label: "Réinit. matériaux",
-    undo: () => restoreMaterialsSnap(matSnap),
-  });
   let n = 0;
   originalMaterialsSnapshot.forEach((entry) => {
     if (!entry.mesh) return;
@@ -1379,6 +1453,12 @@ function resetMaterialsToOriginal() {
   pendingTexture = null;
   const texInput = document.getElementById('mat-texture');
   if (texInput) texInput.value = '';
+  const afterSnap = snapshotAllMaterials();
+  pushUndo({
+    label: "Réinit. matériaux",
+    undo: () => restoreMaterialsSnap(matSnap),
+    redo: () => restoreMaterialsSnap(afterSnap),
+  });
   refreshMaterialSelect(false);
   scheduleSavePrefs();
   setStatus("Matériaux d'origine restaurés (" + n + " mesh).");
@@ -1446,7 +1526,11 @@ function loadMaterialToUI(index) {
   if (!entry) return;
   const m = entry.material;
   const colorEl = document.getElementById('mat-color');
-  if (colorEl && m.color) colorEl.value = '#' + m.color.getHexString();
+  if (colorEl && m.color) {
+    colorEl.value = '#' + m.color.getHexString();
+    const hexEl = document.getElementById('mat-color-hex');
+    if (hexEl) hexEl.value = colorEl.value;
+  }
   const setRange = (id, valId, v) => {
     const el = document.getElementById(id);
     const val = document.getElementById(valId);
@@ -1491,30 +1575,33 @@ function ensurePhysical(m) {
 }
 
 function applyToMaterial(m, allValues) {
-  const { color, metal, rough, opacity, transparent, transmission, emissive, emissiveInt } = allValues;
+  const {
+    color, metal, rough, opacity, transparent, transmission,
+    emissive, emissiveInt, texSx, texSy, texSz,
+  } = allValues;
   let mat = m;
   if (transmission > 0.001 && !mat.isMeshPhysicalMaterial) {
     mat = ensurePhysical(mat);
   }
-  if (mat.color) mat.color.set(color);
-  if (mat.metalness !== undefined) mat.metalness = metal;
-  if (mat.roughness !== undefined) mat.roughness = rough;
-  mat.opacity = opacity;
-  mat.transparent = transparent || opacity < 0.99 || transmission > 0.001;
-  if (mat.transmission !== undefined) mat.transmission = transmission;
-  if (mat.emissive) mat.emissive.set(emissive);
-  if (mat.emissiveIntensity !== undefined) mat.emissiveIntensity = emissiveInt;
+  // Toujours muter le matériau courant (évite les références orphelines au 2e apply)
+  if (color && mat.color) mat.color.set(color);
+  if (mat.metalness !== undefined && metal != null) mat.metalness = metal;
+  if (mat.roughness !== undefined && rough != null) mat.roughness = rough;
+  if (opacity != null) mat.opacity = opacity;
+  mat.transparent = !!(transparent || (opacity != null && opacity < 0.99) || (transmission != null && transmission > 0.001));
+  if (mat.transmission !== undefined && transmission != null) mat.transmission = transmission;
+  if (emissive && mat.emissive) mat.emissive.set(emissive);
+  if (mat.emissiveIntensity !== undefined && emissiveInt != null) mat.emissiveIntensity = emissiveInt;
   if (pendingTexture) {
     mat.map = pendingTexture;
     mat.map.colorSpace = THREE.SRGBColorSpace;
     mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
     mat.map.needsUpdate = true;
   }
-  if (mat.map && values.texSx != null) {
+  if (mat.map && texSx != null) {
     mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
-    // Z sert de facteur global si besoin, appliqué sur X/Y
-    const zx = values.texSx * (values.texSz || 1);
-    const zy = values.texSy * (values.texSz || 1);
+    const zx = (texSx || 1) * (texSz || 1);
+    const zy = (texSy || 1) * (texSz || 1);
     mat.map.repeat.set(zx, zy);
     mat.map.needsUpdate = true;
   }
@@ -1544,49 +1631,66 @@ function applyMaterialsFromUI(applyAll = false) {
     return;
   }
   const matSnap = snapshotAllMaterials();
-  pushUndo({
-    label: applyAll ? 'Matériaux (tous)' : 'Matériau',
-    undo: () => restoreMaterialsSnap(matSnap),
-  });
   const values = readMatUI();
+  const selectedLabel = (() => {
+    const sel = document.getElementById('mat-select');
+    return sel?.selectedOptions?.[0]?.textContent || null;
+  })();
+
   if (applyAll) {
-    let count = 0;
     collectMaterials();
+    if (!materialEntries.length) {
+      setStatus('Aucun matériau.', true);
+      return;
+    }
     materialEntries.forEach((entry) => {
-      const newMat = applyToMaterial(entry.material, values);
+      const oldMat = entry.material;
+      const newMat = applyToMaterial(oldMat, values);
       entry.meshes.forEach((mesh) => {
         if (Array.isArray(mesh.material)) {
-          mesh.material = mesh.material.map((m) => (m === entry.material ? newMat : m));
-        } else if (mesh.material === entry.material) {
+          mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
+        } else if (mesh.material === oldMat) {
           mesh.material = newMat;
         }
       });
       entry.material = newMat;
-      count++;
     });
-    setStatus(`Matériaux appliqués sur ${count} entrée(s).`);
-    scheduleSavePrefs();
+    const afterSnap = snapshotAllMaterials();
+    pushUndo({
+      label: 'Matériaux (tous)',
+      undo: () => restoreMaterialsSnap(matSnap),
+      redo: () => restoreMaterialsSnap(afterSnap),
+    });
+    setStatus('Matériaux appliqués sur ' + materialEntries.length + ' entrée(s).');
   } else {
-    const entry = getSelectedMaterialEntry();
+    // Re-collect pour synchroniser les références meshes ↔ matériaux
+    collectMaterials();
+    let entry = null;
+    if (selectedLabel) entry = materialEntries.find((e) => e.label === selectedLabel) || null;
+    if (!entry) entry = getSelectedMaterialEntry();
     if (!entry) {
       setStatus('Sélectionne un matériau.', true);
       return;
     }
-    const newMat = applyToMaterial(entry.material, values);
+    const oldMat = entry.material;
+    const newMat = applyToMaterial(oldMat, values);
     entry.meshes.forEach((mesh) => {
       if (Array.isArray(mesh.material)) {
-        mesh.material = mesh.material.map((m) => (m === entry.material ? newMat : m));
-      } else if (mesh.material === entry.material) {
+        mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
+      } else if (mesh.material === oldMat) {
         mesh.material = newMat;
       }
     });
     entry.material = newMat;
-    setStatus(`Matériau « ${entry.label} » mis à jour.`);
-    // garder le même matériau sélectionné
-    refreshMaterialSelect(true);
-    scheduleSavePrefs();
-    return;
+    const afterSnap = snapshotAllMaterials();
+    pushUndo({
+      label: 'Matériau « ' + entry.label + ' »',
+      undo: () => restoreMaterialsSnap(matSnap),
+      redo: () => restoreMaterialsSnap(afterSnap),
+    });
+    setStatus('Matériau « ' + entry.label + ' » mis à jour.');
   }
+  pendingTexture = null;
   refreshMaterialSelect(true);
   scheduleSavePrefs();
 }
@@ -1653,6 +1757,102 @@ document.getElementById('btn-clear-tex')?.addEventListener('click', () => {
   }
   setStatus('Texture retirée.');
 });
+
+
+// ===== Couleur hex + couleurs personnalisées =====
+const CUSTOM_COLORS_KEY = '3dviewer_custom_colors_v1';
+
+function normalizeHex(v) {
+  if (!v) return null;
+  let s = String(v).trim();
+  if (s[0] !== '#') s = '#' + s;
+  if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+    s = '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  }
+  if (!/^#[0-9a-fA-F]{6}$/.test(s)) return null;
+  return s.toLowerCase();
+}
+
+function loadCustomColors() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_COLORS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((c) => normalizeHex(c)) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveCustomColors(list) {
+  try {
+    localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(list.slice(0, 24)));
+  } catch (_) {}
+}
+
+function renderCustomColors() {
+  const box = document.getElementById('custom-colors');
+  if (!box) return;
+  box.innerHTML = '';
+  loadCustomColors().forEach((hex) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.title = hex + ' (clic = utiliser, dbl-clic = supprimer)';
+    b.style.background = hex;
+    b.addEventListener('click', () => {
+      const c = document.getElementById('mat-color');
+      const h = document.getElementById('mat-color-hex');
+      if (c) c.value = hex;
+      if (h) h.value = hex;
+    });
+    b.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      const next = loadCustomColors().filter((x) => x !== hex);
+      saveCustomColors(next);
+      renderCustomColors();
+      setStatus('Couleur retirée : ' + hex);
+    });
+    box.appendChild(b);
+  });
+}
+
+function syncColorInputs(from) {
+  const c = document.getElementById('mat-color');
+  const h = document.getElementById('mat-color-hex');
+  if (!c || !h) return;
+  if (from === 'picker') {
+    h.value = c.value;
+  } else {
+    const n = normalizeHex(h.value);
+    if (n) {
+      c.value = n;
+      h.value = n;
+    }
+  }
+}
+
+document.getElementById('mat-color')?.addEventListener('input', () => syncColorInputs('picker'));
+document.getElementById('mat-color-hex')?.addEventListener('change', () => syncColorInputs('hex'));
+document.getElementById('mat-color-hex')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    syncColorInputs('hex');
+  }
+});
+document.getElementById('btn-save-color')?.addEventListener('click', () => {
+  const hex = normalizeHex(document.getElementById('mat-color')?.value);
+  if (!hex) {
+    setStatus('Couleur invalide.', true);
+    return;
+  }
+  const list = loadCustomColors().filter((c) => c !== hex);
+  list.unshift(hex);
+  saveCustomColors(list);
+  renderCustomColors();
+  setStatus('Couleur enregistrée : ' + hex);
+});
+renderCustomColors();
+
 
 document.getElementById('btn-apply-mat')?.addEventListener('click', () => applyMaterialsFromUI(false));
 document.getElementById('btn-apply-mat-all')?.addEventListener('click', () => applyMaterialsFromUI(true));
