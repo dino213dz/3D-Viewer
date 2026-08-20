@@ -104,7 +104,7 @@ html, body {
   z-index: 60;
 }
 
-.menu-item:hover > .menu-dropdown,
+/* Un seul sous-menu visible : uniquement via .open (géré en JS) */
 .menu-item.open > .menu-dropdown {
   display: block;
 }
@@ -552,8 +552,7 @@ html, body {
     background: #252730;
     padding: 0;
   }
-  .menu-item.open > .menu-dropdown,
-  .menu-item:hover > .menu-dropdown {
+  .menu-item.open > .menu-dropdown {
     display: block;
   }
   .menu-dropdown button {

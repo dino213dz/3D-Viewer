@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.5';
+const APP_VERSION = '1.7.6';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1086,7 +1086,18 @@ document.getElementById('side-min')?.addEventListener('click', () => {
 function collapseMenus() {
   menuRoot?.classList.remove('menu-open');
   menuBurger?.classList.remove('active');
+  document.getElementById('menubar')?.classList.remove('menu-active');
   document.querySelectorAll('.menu-item.open').forEach((i) => i.classList.remove('open'));
+}
+
+function openMenuItem(item) {
+  document.querySelectorAll('.menu-item.open').forEach((i) => {
+    if (i !== item) i.classList.remove('open');
+  });
+  if (item) {
+    item.classList.add('open');
+    document.getElementById('menubar')?.classList.add('menu-active');
+  }
 }
 
 // Menu burger (écrans étroits)
@@ -1218,22 +1229,32 @@ document.getElementById('menu-apply-all')?.addEventListener('click', () => {
   applyMaterialsFromUI(true);
 });
 
-// Touch-friendly: click to open menu on mobile
+// Menu style macOS : clic pour ouvrir, un seul sous-menu, survol bascule si déjà actif
 document.querySelectorAll('.menu-item').forEach((item) => {
   const label = item.querySelector('.menu-label');
+  const hasDrop = !!item.querySelector('.menu-dropdown');
+  if (!hasDrop) return;
+
   label?.addEventListener('click', (e) => {
-    if (item.querySelector('.menu-dropdown')) {
-      e.stopPropagation();
-      document.querySelectorAll('.menu-item').forEach((i) => {
-        if (i !== item) i.classList.remove('open');
-      });
-      item.classList.toggle('open');
+    e.preventDefault();
+    e.stopPropagation();
+    if (item.classList.contains('open')) {
+      // re-clic sur le même = fermer
+      collapseMenus();
+    } else {
+      openMenuItem(item);
     }
   });
+
+  // Si un menu est déjà ouvert, le survol d'un autre titre bascule uniquement sur celui-ci
+  item.addEventListener('mouseenter', () => {
+    const bar = document.getElementById('menubar');
+    if (!bar?.classList.contains('menu-active')) return;
+    openMenuItem(item);
+  });
 });
-document.addEventListener('click', () => {
-  document.querySelectorAll('.menu-item.open').forEach((i) => i.classList.remove('open'));
-});
+// Ne pas fermer au clic sur la barre elle-même (déjà géré : hors #menubar → collapse)
+
 
 // ========== Lights management ==========
 function updateLightCount() {
