@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -166,6 +166,18 @@ controls.target.set(0, 0.8, 0);
 controls.update();
 controls.addEventListener('end', () => scheduleSavePrefs());
 
+// ===== Gizmo axes (style Blender) =====
+const axesScene = new THREE.Scene();
+const axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 10);
+const axesGizmo = new THREE.AxesHelper(1.2);
+axesScene.add(axesGizmo);
+// Axes dans la scène (origine)
+const sceneAxes = new THREE.AxesHelper(1.5);
+sceneAxes.name = 'sceneAxes';
+scene.add(sceneAxes);
+renderer.autoClear = false;
+
+
 // Ground grid + plane for shadows
 const grid = new THREE.GridHelper(80, 80, 0x333844, 0x22252e);
 scene.add(grid);
@@ -324,6 +336,7 @@ function captureLightState(entry) {
     angle: light.angle,
     penumbra: light.penumbra,
     castShadow: !!light.castShadow,
+    rotation: light.rotation ? [light.rotation.x, light.rotation.y, light.rotation.z] : null,
   };
 }
 
@@ -337,6 +350,15 @@ function applyLightState(entry, st) {
   if (st.angle != null && light.angle !== undefined) light.angle = st.angle;
   if (st.penumbra != null && light.penumbra !== undefined) light.penumbra = st.penumbra;
   if (st.castShadow != null && light.castShadow !== undefined) light.castShadow = st.castShadow;
+  if (st.rotation && light.rotation) {
+    light.rotation.set(st.rotation[0], st.rotation[1], st.rotation[2]);
+    if (light.target) {
+      const dist = light.position.distanceTo(light.target.position) || 5;
+      const dir = new THREE.Vector3(0, -1, 0);
+      dir.applyEuler(light.rotation);
+      light.target.position.copy(light.position).addScaledVector(dir, dist);
+    }
+  }
   // sync card UI if present
   if (entry.card) {
     const c = entry.card.querySelector('.ctrl-color');
@@ -345,6 +367,12 @@ function applyLightState(entry, st) {
     if (i && st.intensity != null) { i.value = st.intensity; const v = entry.card.querySelector('.val-intensity'); if (v) v.textContent = Number(st.intensity).toFixed(2); }
     const px = entry.card.querySelector('.ctrl-px');
     if (px && st.position) { px.value = st.position[0]; entry.card.querySelector('.ctrl-py').value = st.position[1]; entry.card.querySelector('.ctrl-pz').value = st.position[2]; }
+    const rx = entry.card.querySelector('.ctrl-rx');
+    if (rx && st.rotation) {
+      rx.value = (st.rotation[0] * 180 / Math.PI).toFixed(0);
+      entry.card.querySelector('.ctrl-ry').value = (st.rotation[1] * 180 / Math.PI).toFixed(0);
+      entry.card.querySelector('.ctrl-rz').value = (st.rotation[2] * 180 / Math.PI).toFixed(0);
+    }
   }
   if (entry.helper) {
     if (entry.helper.update) entry.helper.update();
@@ -1178,14 +1206,14 @@ document.getElementById('menu-clear')?.addEventListener('click', clearModelAndMa
 function onUndoClick(e) {
   e.preventDefault();
   e.stopPropagation();
-  performUndo();
   collapseMenus();
+  performUndo();
 }
 function onRedoClick(e) {
   e.preventDefault();
   e.stopPropagation();
-  performRedo();
   collapseMenus();
+  performRedo();
 }
 document.getElementById('menu-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('toolbar-undo')?.addEventListener('click', onUndoClick);
@@ -1209,25 +1237,23 @@ function toggleSectionPanel(id, title, afterOpen) {
   if (typeof afterOpen === 'function') afterOpen();
 }
 
-document.getElementById('toolbar-mats')?.addEventListener('click', (e) => {
+function toolbarClick(e, fn) {
   e.preventDefault();
   e.stopPropagation();
-  toggleSectionPanel('sec-mats', 'Matériaux', () => refreshMaterialSelect());
+  collapseMenus();
+  fn();
+}
+document.getElementById('toolbar-mats')?.addEventListener('click', (e) => {
+  toolbarClick(e, () => toggleSectionPanel('sec-mats', 'Matériaux', () => refreshMaterialSelect()));
 });
 document.getElementById('toolbar-lights')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  toggleSectionPanel('sec-lights', 'Lumières');
+  toolbarClick(e, () => toggleSectionPanel('sec-lights', 'Lumières'));
 });
 document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  doFrame();
+  toolbarClick(e, () => doFrame());
 });
 document.getElementById('toolbar-frame-visible')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  doFrameVisible();
+  toolbarClick(e, () => doFrameVisible());
 });
 document.getElementById('menu-frame-visible')?.addEventListener('click', doFrameVisible);
 // Raccourcis : Ctrl/Cmd+Z annuler, Ctrl/Cmd+Y ou Shift+Z refaire
@@ -1249,6 +1275,26 @@ document.getElementById('menu-frame')?.addEventListener('click', doFrame);
 document.getElementById('menu-wireframe')?.addEventListener('click', toggleWireframe);
 document.getElementById('menu-file-props')?.addEventListener('click', showFilePropsPanel);
 document.getElementById('menu-toggle-panel')?.addEventListener('click', toggleSidePanel);
+
+// ===== Couleur du ciel (arrière-plan) =====
+function setSkyColor(hex) {
+  if (!hex) return;
+  const c = new THREE.Color(hex);
+  scene.background = c;
+  if (scene.fog) scene.fog.color.copy(c);
+  const input = document.getElementById('menu-sky-color');
+  if (input && input.value !== hex) input.value = hex;
+  try { localStorage.setItem('3dviewer_sky_color', hex); } catch (_) {}
+}
+document.getElementById('menu-sky-color')?.addEventListener('input', (e) => {
+  setSkyColor(e.target.value);
+});
+document.getElementById('menu-sky-color')?.addEventListener('click', (e) => e.stopPropagation());
+try {
+  const savedSky = localStorage.getItem('3dviewer_sky_color');
+  if (savedSky) setSkyColor(savedSky);
+} catch (_) {}
+
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
   showSection('sec-mats', 'Matériaux');
   refreshMaterialSelect();
@@ -1481,6 +1527,18 @@ function buildLightCard(entry) {
         <input type="number" class="ctrl-pz" step="0.1" value="${light.position.z.toFixed(1)}" />
       </div>
       <div class="control-row">
+        <label>Rot X °</label>
+        <input type="number" class="ctrl-rx" step="1" value="${(light.rotation.x * 180 / Math.PI).toFixed(0)}" />
+      </div>
+      <div class="control-row">
+        <label>Rot Y °</label>
+        <input type="number" class="ctrl-ry" step="1" value="${(light.rotation.y * 180 / Math.PI).toFixed(0)}" />
+      </div>
+      <div class="control-row">
+        <label>Rot Z °</label>
+        <input type="number" class="ctrl-rz" step="1" value="${(light.rotation.z * 180 / Math.PI).toFixed(0)}" />
+      </div>
+      <div class="control-row">
         <label>Ombres</label>
         <input type="checkbox" class="ctrl-shadow" ${light.castShadow ? 'checked' : ''} />
       </div>
@@ -1582,6 +1640,31 @@ function buildLightCard(entry) {
     card.querySelector('.ctrl-py').addEventListener('change', updatePos);
     card.querySelector('.ctrl-pz').addEventListener('change', updatePos);
 
+    const updateRot = () => {
+      const rx = (parseFloat(card.querySelector('.ctrl-rx').value) || 0) * Math.PI / 180;
+      const ry = (parseFloat(card.querySelector('.ctrl-ry').value) || 0) * Math.PI / 180;
+      const rz = (parseFloat(card.querySelector('.ctrl-rz').value) || 0) * Math.PI / 180;
+      light.rotation.set(rx, ry, rz);
+      // Directional / Spot : réorienter la cible selon la rotation
+      if (light.target) {
+        const dist = light.position.distanceTo(light.target.position) || 5;
+        const dir = new THREE.Vector3(0, -1, 0);
+        dir.applyEuler(light.rotation);
+        light.target.position.copy(light.position).addScaledVector(dir, dist);
+        light.target.updateMatrixWorld();
+      }
+      if (entry.helper) {
+        entry.helper.update?.();
+        if (entry.helper._marker) entry.helper._marker.position.copy(light.position);
+      }
+    };
+    card.querySelector('.ctrl-rx').addEventListener('focus', pushLightModUndo);
+    card.querySelector('.ctrl-ry').addEventListener('focus', pushLightModUndo);
+    card.querySelector('.ctrl-rz').addEventListener('focus', pushLightModUndo);
+    card.querySelector('.ctrl-rx').addEventListener('change', updateRot);
+    card.querySelector('.ctrl-ry').addEventListener('change', updateRot);
+    card.querySelector('.ctrl-rz').addEventListener('change', updateRot);
+
     card.querySelector('.ctrl-shadow').addEventListener('change', (e) => {
       pushLightModUndo();
       light.castShadow = e.target.checked;
@@ -1668,7 +1751,23 @@ function animate() {
       }
     }
   });
+  renderer.clear();
   renderer.render(scene, camera);
+  // Gizmo orientation (coin bas-droit)
+  const aw = 96;
+  const ah = 96;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  axesCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(2.8);
+  axesCamera.up.copy(camera.up);
+  axesCamera.lookAt(0, 0, 0);
+  renderer.clearDepth();
+  renderer.setScissorTest(true);
+  renderer.setScissor(w - aw - 10, 10, aw, ah);
+  renderer.setViewport(w - aw - 10, 10, aw, ah);
+  renderer.render(axesScene, axesCamera);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, w, h);
 }
 animate();
 
