@@ -287,11 +287,9 @@ function performUndo() {
     setStatus('Annulé : ' + (entry.label || 'action'));
   } catch (err) {
     console.error(err);
-    setStatus('Échec de l\\'annulation', true);
+    setStatus("Échec de l'annulation", true);
   }
 }
-
-
 
 const statusEl = document.getElementById('status');
 const loaderEl = document.getElementById('loader');
