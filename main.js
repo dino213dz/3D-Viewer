@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.2';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1290,9 +1290,28 @@ document.getElementById('menu-sky-color')?.addEventListener('input', (e) => {
   setSkyColor(e.target.value);
 });
 document.getElementById('menu-sky-color')?.addEventListener('click', (e) => e.stopPropagation());
+document.getElementById('menu-reset-sky')?.addEventListener('click', () => {
+  try { localStorage.removeItem('3dviewer_sky_color'); } catch (_) {}
+  setSkyColor('#1a1d24');
+  setStatus('Couleur du ciel réinitialisée.');
+});
+
+let gizmosVisible = true;
+function setGizmosVisible(vis) {
+  gizmosVisible = !!vis;
+  if (typeof sceneAxes !== 'undefined' && sceneAxes) sceneAxes.visible = gizmosVisible;
+  if (typeof axesGizmo !== 'undefined' && axesGizmo) axesGizmo.visible = gizmosVisible;
+  try { localStorage.setItem('3dviewer_gizmos', gizmosVisible ? '1' : '0'); } catch (_) {}
+  setStatus(gizmosVisible ? 'Gizmo affichés.' : 'Gizmo masqués.');
+}
+document.getElementById('menu-toggle-gizmo')?.addEventListener('click', () => {
+  setGizmosVisible(!gizmosVisible);
+});
 try {
   const savedSky = localStorage.getItem('3dviewer_sky_color');
   if (savedSky) setSkyColor(savedSky);
+  const g = localStorage.getItem('3dviewer_gizmos');
+  if (g === '0') setGizmosVisible(false);
 } catch (_) {}
 
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
@@ -1754,20 +1773,22 @@ function animate() {
   renderer.clear();
   renderer.render(scene, camera);
   // Gizmo orientation (coin bas-droit)
-  const aw = 96;
-  const ah = 96;
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  axesCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(2.8);
-  axesCamera.up.copy(camera.up);
-  axesCamera.lookAt(0, 0, 0);
-  renderer.clearDepth();
-  renderer.setScissorTest(true);
-  renderer.setScissor(w - aw - 10, 10, aw, ah);
-  renderer.setViewport(w - aw - 10, 10, aw, ah);
-  renderer.render(axesScene, axesCamera);
-  renderer.setScissorTest(false);
-  renderer.setViewport(0, 0, w, h);
+  if (typeof gizmosVisible === 'undefined' || gizmosVisible) {
+    const aw = 96;
+    const ah = 96;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    axesCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(2.8);
+    axesCamera.up.copy(camera.up);
+    axesCamera.lookAt(0, 0, 0);
+    renderer.clearDepth();
+    renderer.setScissorTest(true);
+    renderer.setScissor(w - aw - 10, 10, aw, ah);
+    renderer.setViewport(w - aw - 10, 10, aw, ah);
+    renderer.render(axesScene, axesCamera);
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, w, h);
+  }
 }
 animate();
 
@@ -1909,26 +1930,38 @@ function resetMaterialsToOriginal() {
 function collectMaterials() {
   materialEntries = [];
   if (!currentModel) return materialEntries;
-  const map = new Map();
+  // Regrouper par nom de matériau (même nom = une seule entrée éditable)
+  const byName = new Map();
   let autoIdx = 0;
   currentModel.traverse((child) => {
     if (!child.isMesh || !child.material) return;
     const mats = Array.isArray(child.material) ? child.material : [child.material];
-    mats.forEach((m) => {
-      let entry = map.get(m);
+    mats.forEach((m, mi) => {
+      let base = (m.name || child.userData?.matName || '').trim();
+      if (!base) {
+        base = (child.name || 'Matériau').trim() || ('Matériau ' + (++autoIdx));
+        m.name = base;
+      }
+      const key = base.toLowerCase();
+      let entry = byName.get(key);
       if (!entry) {
-        const base = (m.name || child.userData?.matName || child.name || (`Matériau ${++autoIdx}`)).trim();
-        if (!m.name) m.name = base;
-        entry = { key: String(map.size), baseLabel: base, label: base, material: m, meshes: [] };
-        map.set(m, entry);
+        entry = {
+          key: key,
+          baseLabel: base,
+          label: base,
+          material: m, // matériau "principal" pour l'UI
+          materials: [m], // tous les instances THREE.Material du même nom
+          meshes: [],
+        };
+        byName.set(key, entry);
         materialEntries.push(entry);
+      } else if (!entry.materials.includes(m)) {
+        entry.materials.push(m);
       }
       if (!entry.meshes.includes(child)) entry.meshes.push(child);
     });
   });
-  // Ordre alphabétique sur le nom de base
   materialEntries.sort((a, b) => a.baseLabel.localeCompare(b.baseLabel, 'fr', { sensitivity: 'base' }));
-  // Numérotation 1-Nom, 2-Nom...
   materialEntries.forEach((e, i) => {
     e.label = (i + 1) + '-' + e.baseLabel;
     e.key = String(i);
@@ -2093,16 +2126,20 @@ function applyMaterialsFromUI(applyAll = false) {
       return;
     }
     materialEntries.forEach((entry) => {
-      const oldMat = entry.material;
-      const newMat = applyToMaterial(oldMat, values);
-      entry.meshes.forEach((mesh) => {
-        if (Array.isArray(mesh.material)) {
-          mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
-        } else if (mesh.material === oldMat) {
-          mesh.material = newMat;
-        }
+      const list = entry.materials && entry.materials.length ? entry.materials : [entry.material];
+      list.forEach((oldMat, i) => {
+        const newMat = applyToMaterial(oldMat, values);
+        entry.meshes.forEach((mesh) => {
+          if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
+          } else if (mesh.material === oldMat) {
+            mesh.material = newMat;
+          }
+        });
+        list[i] = newMat;
       });
-      entry.material = newMat;
+      entry.materials = list;
+      entry.material = list[0];
     });
     const afterSnap = snapshotAllMaterials();
     pushUndo({
@@ -2121,23 +2158,27 @@ function applyMaterialsFromUI(applyAll = false) {
       setStatus('Sélectionne un matériau.', true);
       return;
     }
-    const oldMat = entry.material;
-    const newMat = applyToMaterial(oldMat, values);
-    entry.meshes.forEach((mesh) => {
-      if (Array.isArray(mesh.material)) {
-        mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
-      } else if (mesh.material === oldMat) {
-        mesh.material = newMat;
-      }
+    const list = entry.materials && entry.materials.length ? entry.materials.slice() : [entry.material];
+    list.forEach((oldMat, i) => {
+      const newMat = applyToMaterial(oldMat, values);
+      entry.meshes.forEach((mesh) => {
+        if (Array.isArray(mesh.material)) {
+          mesh.material = mesh.material.map((m) => (m === oldMat ? newMat : m));
+        } else if (mesh.material === oldMat) {
+          mesh.material = newMat;
+        }
+      });
+      list[i] = newMat;
     });
-    entry.material = newMat;
+    entry.materials = list;
+    entry.material = list[0];
     const afterSnap = snapshotAllMaterials();
     pushUndo({
       label: 'Matériau « ' + entry.label + ' »',
       undo: () => restoreMaterialsSnap(matSnap),
       redo: () => restoreMaterialsSnap(afterSnap),
     });
-    setStatus('Matériau « ' + entry.label + ' » mis à jour.');
+    setStatus('Matériau « ' + entry.label + ' » mis à jour (' + list.length + ' instance(s)).');
   }
   pendingTexture = null;
   refreshMaterialSelect(true);
@@ -2255,14 +2296,18 @@ document.getElementById('mat-select')?.addEventListener('change', (e) => {
 // Aperçu live de l'échelle de texture sur le matériau sélectionné
 function applyTexScaleLive() {
   const entry = getSelectedMaterialEntry();
-  if (!entry?.material?.map) return;
+  if (!entry) return;
+  const list = entry.materials && entry.materials.length ? entry.materials : [entry.material];
   const sx = parseFloat(document.getElementById('mat-tex-sx')?.value || '1');
   const sy = parseFloat(document.getElementById('mat-tex-sy')?.value || '1');
   const sz = parseFloat(document.getElementById('mat-tex-sz')?.value || '1');
-  entry.material.map.wrapS = entry.material.map.wrapT = THREE.RepeatWrapping;
-  entry.material.map.repeat.set(sx * sz, sy * sz);
-  entry.material.map.needsUpdate = true;
-  entry.material.needsUpdate = true;
+  list.forEach((mat) => {
+    if (!mat?.map) return;
+    mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
+    mat.map.repeat.set(sx * sz, sy * sz);
+    mat.map.needsUpdate = true;
+    mat.needsUpdate = true;
+  });
 }
 ['mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
   document.getElementById(id)?.addEventListener('input', applyTexScaleLive);

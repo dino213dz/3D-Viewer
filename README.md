@@ -4,7 +4,7 @@ Visualiseur 3D web pour modèles **FBX / glTF / GLB / ZIP**.
 
 | | |
 |---|---|
-| **Version** | 2.0.1 |
+| **Version** | 2.0.2 |
 | **Création** | 19 août 2026 |
 | **Dernière MAJ** | 20 août 2026 |
 | **Auteur** | CHORFA Allaeddine |
@@ -12,11 +12,11 @@ Visualiseur 3D web pour modèles **FBX / glTF / GLB / ZIP**.
 | **Contact** | [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr) |
 | **GitHub** | [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer) |
 
-Archive de déploiement : **`3DViewer_201.zip`**
+Archive de déploiement : **`3DViewer_202.zip`**
 
 ---
 
-## Fonctionnalités (v2.0.1)
+## Fonctionnalités (v2.0.2)
 
 - Menu style macOS + barre d’outils (Matériaux, Lumières, Annuler, Refaire, Cadrer)
 - Chargement FBX / GLB / GLTF / ZIP (menu Fichier)
@@ -32,7 +32,7 @@ Archive de déploiement : **`3DViewer_201.zip`**
 
 ## Historique des versions
 
-### 2.0.1 *(majeure)*
+### 2.0.2 *(majeure)*
 - Icônes barre actives : **bleu accent** (plus de vert)
 - Matériaux : ordre alphabétique + numérotation `N-Nom`
 - Clic 3D → bulle nom du matériau
@@ -41,7 +41,7 @@ Archive de déploiement : **`3DViewer_201.zip`**
 ### 1.7.9
 - README historique complet
 - Bulles tooltips barre de menu
-- Liens visités corrigés ; vert réservé aux fenêtres actives (remplacé en 2.0.1 par bleu)
+- Liens visités corrigés ; vert réservé aux fenêtres actives (remplacé en 2.0.2 par bleu)
 
 ### 1.7.8
 - Toggle Matériaux / Lumières
@@ -82,7 +82,7 @@ Archive de déploiement : **`3DViewer_201.zip`**
 
 ## Déploiement
 
-1. Télécharger **`3DViewer_201.zip`**
+1. Télécharger **`3DViewer_202.zip`**
 2. Déposer sur Netlify Drop
 3. Vider le cache navigateur
 
