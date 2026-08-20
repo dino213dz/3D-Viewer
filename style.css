@@ -805,3 +805,40 @@ svg.ico {
   margin: 0 2px;
   flex-shrink: 0;
 }
+
+.about-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.about-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #3DD32C; /* vert Xbox */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+.about-link .about-ico {
+  width: 16px;
+  height: 16px;
+  margin-right: 0;
+  color: #3DD32C;
+  flex-shrink: 0;
+}
+.about-link:hover,
+.about-link:hover .about-ico {
+  color: var(--accent);
+}
+.about-link:active,
+.about-link:active .about-ico {
+  color: #107C10;
+}
+.about-body a:not(.about-link) {
+  color: #3DD32C;
+}
+.about-body a:not(.about-link):hover {
+  color: var(--accent);
+}

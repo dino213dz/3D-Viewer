@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.7';
+const APP_VERSION = '1.7.8';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1182,16 +1182,33 @@ document.getElementById('menu-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('toolbar-undo')?.addEventListener('click', onUndoClick);
 document.getElementById('menu-redo')?.addEventListener('click', onRedoClick);
 document.getElementById('toolbar-redo')?.addEventListener('click', onRedoClick);
+function isSectionVisible(id) {
+  const panel = document.getElementById('side-panel');
+  const sec = document.getElementById(id);
+  if (!panel || !sec) return false;
+  if (panel.classList.contains('hidden-ui') || panel.classList.contains('minimized')) return false;
+  return !sec.classList.contains('hidden');
+}
+
+function toggleSectionPanel(id, title, afterOpen) {
+  if (isSectionVisible(id)) {
+    closeSidePanel();
+    setStatus('Panneau fermé.');
+    return;
+  }
+  showSection(id, title);
+  if (typeof afterOpen === 'function') afterOpen();
+}
+
 document.getElementById('toolbar-mats')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
-  showSection('sec-mats', 'Matériaux');
-  refreshMaterialSelect();
+  toggleSectionPanel('sec-mats', 'Matériaux', () => refreshMaterialSelect());
 });
 document.getElementById('toolbar-lights')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
-  showSection('sec-lights', 'Lumières');
+  toggleSectionPanel('sec-lights', 'Lumières');
 });
 document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
   e.preventDefault();
