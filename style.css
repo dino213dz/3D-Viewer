@@ -766,3 +766,19 @@ svg.ico {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* Layout panneau selon orientation (JS pose left/top/bottom) */
+.side-panel {
+  transition: top 0.2s ease, bottom 0.2s ease, left 0.2s ease, right 0.2s ease;
+}
+@media (orientation: portrait) {
+  .floating-window {
+    align-items: flex-end;
+  }
+}
+@media (orientation: landscape) {
+  .floating-window {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}

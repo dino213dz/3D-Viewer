@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.2';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -680,6 +680,115 @@ function doFrame() {
   }
 }
 
+function isPortraitLayout() {
+  return window.innerHeight > window.innerWidth;
+}
+
+/** Repositionne panneau + fenêtres flottantes selon orientation */
+function layoutFloatingWindows() {
+  const panel = document.getElementById('side-panel');
+  const loadWin = document.getElementById('load-window');
+  const portrait = isPortraitLayout();
+  const menuH = 32;
+  const margin = 10;
+
+  if (panel && !panel.classList.contains('maximized')) {
+    panel.classList.remove('minimized');
+    // reset inline size limits that could block
+    if (portrait) {
+      // bas de l'écran
+      panel.style.left = margin + 'px';
+      panel.style.right = margin + 'px';
+      panel.style.top = 'auto';
+      panel.style.bottom = margin + 'px';
+      panel.style.width = 'auto';
+      panel.style.maxWidth = 'calc(100vw - ' + (margin * 2) + 'px)';
+      panel.style.maxHeight = 'min(42vh, 360px)';
+    } else {
+      // haut gauche
+      panel.style.left = margin + 'px';
+      panel.style.right = 'auto';
+      panel.style.top = (menuH + margin) + 'px';
+      panel.style.bottom = 'auto';
+      panel.style.width = '';
+      panel.style.maxWidth = 'min(340px, calc(100vw - 20px))';
+      panel.style.maxHeight = 'calc(100vh - ' + (menuH + margin * 2) + 'px)';
+    }
+  }
+
+  // Fenêtre de chargement : centrée mais ancrée selon orientation
+  if (loadWin) {
+    const inner = loadWin.querySelector('.floating-window-inner');
+    if (inner) {
+      if (portrait) {
+        loadWin.style.alignItems = 'flex-end';
+        loadWin.style.paddingBottom = '16px';
+      } else {
+        loadWin.style.alignItems = 'flex-start';
+        loadWin.style.justifyContent = 'flex-start';
+        loadWin.style.paddingTop = (menuH + 16) + 'px';
+        loadWin.style.paddingLeft = '16px';
+        loadWin.style.paddingBottom = '0';
+      }
+    }
+  }
+}
+
+/**
+ * Cadre l'objet dans la zone d'écran non masquée par le panneau.
+ * Paysage + panneau à gauche → objet vers la droite.
+ * Portrait + panneau en bas → objet vers le haut.
+ */
+function fitCameraToVisibleArea(object) {
+  if (!object) return;
+  fitCameraToObject(object);
+
+  const panel = document.getElementById('side-panel');
+  const panelOpen = panel && !panel.classList.contains('hidden-ui');
+  if (!panelOpen) {
+    setStatus('Objet cadré (plein écran).');
+    return;
+  }
+
+  const portrait = isPortraitLayout();
+  const dist = camera.position.distanceTo(controls.target);
+  const vFov = camera.fov * (Math.PI / 180);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+
+  // Vecteurs caméra
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
+
+  if (!portrait) {
+    // panneau à gauche : décaler la vue pour placer l'objet dans la moitié droite
+    const panelW = Math.min(panel.getBoundingClientRect().width || 320, window.innerWidth * 0.45);
+    const frac = Math.min(0.55, (panelW / window.innerWidth) * 1.15);
+    const shift = Math.tan(hFov / 2) * dist * frac;
+    // déplacer caméra + cible vers la gauche monde pour que le sujet apparaisse à droite
+    camera.position.addScaledVector(right, -shift);
+    controls.target.addScaledVector(right, -shift);
+  } else {
+    // panneau en bas : placer l'objet dans la partie haute
+    const panelH = Math.min(panel.getBoundingClientRect().height || 280, window.innerHeight * 0.45);
+    const frac = Math.min(0.55, (panelH / window.innerHeight) * 1.15);
+    const shift = Math.tan(vFov / 2) * dist * frac;
+    camera.position.addScaledVector(up, shift);
+    controls.target.addScaledVector(up, shift);
+  }
+  controls.update();
+  setStatus(portrait ? 'Cadré zone visible (haut).' : 'Cadré zone visible (droite).');
+}
+
+function doFrameVisible() {
+  if (currentModel) {
+    // s'assurer du layout panneau avant mesure
+    layoutFloatingWindows();
+    requestAnimationFrame(() => fitCameraToVisibleArea(currentModel));
+  } else {
+    setStatus('Aucun modèle à cadrer.', true);
+  }
+}
+
 function doResetCam() {
   if (currentModel) {
     fitCameraToObject(currentModel);
@@ -716,6 +825,7 @@ function showSection(id, title) {
   const sec = document.getElementById(id);
   if (sec) sec.classList.remove('hidden');
   if (sideTitle) sideTitle.textContent = title || 'Panneau';
+  layoutFloatingWindows();
 }
 
 function toggleSidePanel() {
@@ -916,6 +1026,12 @@ document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
   e.stopPropagation();
   doFrame();
 });
+document.getElementById('toolbar-frame-visible')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  doFrameVisible();
+});
+document.getElementById('menu-frame-visible')?.addEventListener('click', doFrameVisible);
 // Raccourcis : Ctrl/Cmd+Z annuler, Ctrl/Cmd+Y ou Shift+Z refaire
 document.addEventListener('keydown', (e) => {
   if (!(e.ctrlKey || e.metaKey)) return;
@@ -931,6 +1047,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 document.getElementById('menu-frame')?.addEventListener('click', doFrame);
+
 document.getElementById('menu-wireframe')?.addEventListener('click', toggleWireframe);
 document.getElementById('menu-toggle-panel')?.addEventListener('click', toggleSidePanel);
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
@@ -1304,14 +1421,31 @@ skipLightUndo = false;
 updateUndoMenu();
 
 // ========== Resize & render loop ==========
+let lastPortrait = null;
 function onResize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
+  const portrait = h > w;
+  if (lastPortrait === null || lastPortrait !== portrait) {
+    lastPortrait = portrait;
+    layoutFloatingWindows();
+  } else {
+    layoutFloatingWindows();
+  }
 }
 window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    onResize();
+    layoutFloatingWindows();
+  }, 150);
+});
+// layout initial
+lastPortrait = window.innerHeight > window.innerWidth;
+layoutFloatingWindows();
 
 function animate() {
   requestAnimationFrame(animate);

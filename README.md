@@ -4,18 +4,18 @@ Visualiseur 3D web pour modèles **FBX / glTF / GLB / ZIP**.
 
 | | |
 |---|---|
-| **Version** | 1.7.1 |
+| **Version** | 1.7.2 |
 | **Création** | 19 août 2026 |
 | **Dernière MAJ** | 20 août 2026 |
 | **Auteur** | CHORFA Allaeddine |
 | **Site** | [chorfa.fr](https://chorfa.fr) |
 | **Contact** | [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr) |
 
-Archive de déploiement : **`3DViewer_171.zip`** (format `3DViewer_xyz` sans points dans le numéro de version).
+Archive de déploiement : **`3DViewer_172.zip`** (format `3DViewer_xyz` sans points dans le numéro de version).
 
 ---
 
-## Fonctionnalités (v1.7.1)
+## Fonctionnalités (v1.7.2)
 
 - Menu style macOS : **Fichier**, **Éditer**, **Vue**, **Aide**, **À propos**
 - Chargement via **Fichier → Charger un fichier** (fenêtre glisser-déposer + parcourir)
@@ -33,7 +33,7 @@ Archive de déploiement : **`3DViewer_171.zip`** (format `3DViewer_xyz` sans poi
 
 ## Historique des versions
 
-### 1.7.1
+### 1.7.2
 - Correction critique : erreur de syntaxe dans `performUndo` (script JS ne se chargeait plus → menus/boutons inactifs)
 
 ### 1.6.8
@@ -89,7 +89,7 @@ Archive de déploiement : **`3DViewer_171.zip`** (format `3DViewer_xyz` sans poi
 
 ## Déploiement (Netlify Drop)
 
-1. Télécharger **`3DViewer_171.zip`**
+1. Télécharger **`3DViewer_172.zip`**
 2. Déposer le ZIP sur [Netlify Drop](https://app.netlify.com/drop) (ou extraire puis glisser le dossier)
 3. Vider le cache navigateur après mise à jour
 
