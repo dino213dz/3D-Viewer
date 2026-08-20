@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.0.3';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -1277,19 +1277,53 @@ document.getElementById('menu-file-props')?.addEventListener('click', showFilePr
 document.getElementById('menu-toggle-panel')?.addEventListener('click', toggleSidePanel);
 
 // ===== Couleur du ciel (arrière-plan) =====
+function toHex6(hexOrColor) {
+  if (!hexOrColor) return '#1a1d24';
+  if (typeof hexOrColor === 'string') {
+    let h = hexOrColor.trim();
+    if (!h.startsWith('#')) h = '#' + h;
+    if (h.length === 4) {
+      h = '#' + h[1]+h[1]+h[2]+h[2]+h[3]+h[3];
+    }
+    return h.toLowerCase();
+  }
+  if (hexOrColor.isColor || hexOrColor.r !== undefined) {
+    return '#' + new THREE.Color(hexOrColor).getHexString();
+  }
+  return '#1a1d24';
+}
+
+function setColorInput(el, hex) {
+  if (!el) return;
+  const h = toHex6(hex);
+  el.value = h;
+  el.setAttribute('value', h);
+}
+
 function setSkyColor(hex) {
   if (!hex) return;
-  const c = new THREE.Color(hex);
+  const h = toHex6(hex);
+  const c = new THREE.Color(h);
   scene.background = c;
   if (scene.fog) scene.fog.color.copy(c);
-  const input = document.getElementById('menu-sky-color');
-  if (input && input.value !== hex) input.value = hex;
-  try { localStorage.setItem('3dviewer_sky_color', hex); } catch (_) {}
+  setColorInput(document.getElementById('menu-sky-color'), h);
+  try { localStorage.setItem('3dviewer_sky_color', h); } catch (_) {}
 }
 document.getElementById('menu-sky-color')?.addEventListener('input', (e) => {
   setSkyColor(e.target.value);
 });
-document.getElementById('menu-sky-color')?.addEventListener('click', (e) => e.stopPropagation());
+document.getElementById('menu-sky-color')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  // synchroniser avec la couleur réelle de la scène avant d'ouvrir le sélecteur
+  if (scene.background && scene.background.isColor) {
+    setColorInput(e.target, '#' + scene.background.getHexString());
+  }
+});
+document.getElementById('menu-sky-color')?.addEventListener('focus', (e) => {
+  if (scene.background && scene.background.isColor) {
+    setColorInput(e.target, '#' + scene.background.getHexString());
+  }
+});
 document.getElementById('menu-reset-sky')?.addEventListener('click', () => {
   try { localStorage.removeItem('3dviewer_sky_color'); } catch (_) {}
   setSkyColor('#1a1d24');
@@ -1619,8 +1653,15 @@ function buildLightCard(entry) {
 
   card.querySelector('.btn-remove').addEventListener('click', () => removeLight(id));
 
-  card.querySelector('.ctrl-color').addEventListener('pointerdown', pushLightModUndo);
-  card.querySelector('.ctrl-color').addEventListener('input', (e) => {
+  const colorInput = card.querySelector('.ctrl-color');
+  colorInput.addEventListener('pointerdown', pushLightModUndo);
+  colorInput.addEventListener('focus', () => {
+    setColorInput(colorInput, '#' + light.color.getHexString());
+  });
+  colorInput.addEventListener('click', () => {
+    setColorInput(colorInput, '#' + light.color.getHexString());
+  });
+  colorInput.addEventListener('input', (e) => {
     light.color.set(e.target.value);
     if (entry.helper) {
       entry.helper.update?.();
@@ -2009,9 +2050,10 @@ function loadMaterialToUI(index) {
   const m = entry.material;
   const colorEl = document.getElementById('mat-color');
   if (colorEl && m.color) {
-    colorEl.value = '#' + m.color.getHexString();
+    const hx = '#' + m.color.getHexString();
+    setColorInput(colorEl, hx);
     const hexEl = document.getElementById('mat-color-hex');
-    if (hexEl) hexEl.value = colorEl.value;
+    if (hexEl) hexEl.value = hx;
   }
   const setRange = (id, valId, v) => {
     const el = document.getElementById(id);
@@ -2029,7 +2071,7 @@ function loadMaterialToUI(index) {
   const tr = document.getElementById('mat-transparent');
   if (tr) tr.checked = !!m.transparent;
   const em = document.getElementById('mat-emissive');
-  if (em && m.emissive) em.value = '#' + m.emissive.getHexString();
+  if (em && m.emissive) setColorInput(em, '#' + m.emissive.getHexString());
   const rx = m.map?.repeat?.x ?? 1;
   const ry = m.map?.repeat?.y ?? 1;
   const setTex = (id, valId, v) => {
@@ -2411,6 +2453,21 @@ function syncColorInputs(from) {
   }
 }
 
+function syncMatColorPickerFromSelection() {
+  const entry = getSelectedMaterialEntry();
+  if (!entry?.material?.color) return;
+  const hx = '#' + entry.material.color.getHexString();
+  setColorInput(document.getElementById('mat-color'), hx);
+  const hexEl = document.getElementById('mat-color-hex');
+  if (hexEl) hexEl.value = hx;
+  if (entry.material.emissive) {
+    setColorInput(document.getElementById('mat-emissive'), '#' + entry.material.emissive.getHexString());
+  }
+}
+document.getElementById('mat-color')?.addEventListener('focus', syncMatColorPickerFromSelection);
+document.getElementById('mat-color')?.addEventListener('click', syncMatColorPickerFromSelection);
+document.getElementById('mat-emissive')?.addEventListener('focus', syncMatColorPickerFromSelection);
+document.getElementById('mat-emissive')?.addEventListener('click', syncMatColorPickerFromSelection);
 document.getElementById('mat-color')?.addEventListener('input', () => syncColorInputs('picker'));
 document.getElementById('mat-color-hex')?.addEventListener('change', () => syncColorInputs('hex'));
 document.getElementById('mat-color-hex')?.addEventListener('keydown', (e) => {
