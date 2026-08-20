@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.6.8';
+const APP_VERSION = '1.6.9';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -294,7 +294,7 @@ function performUndo() {
     setStatus('Annulé : ' + (entry.label || 'action'));
   } catch (err) {
     console.error(err);
-    setStatus('Échec de l\\'annulation', true);
+    setStatus("Échec de l'annulation", true);
   }
 }
 
@@ -1197,10 +1197,10 @@ function buildLightCard(entry) {
 }
 
 // Buttons
-document.getElementById('btn-add-ambient').addEventListener('click', () => addLight('AmbientLight'));
-document.getElementById('btn-add-directional').addEventListener('click', () => addLight('DirectionalLight'));
-document.getElementById('btn-add-point').addEventListener('click', () => addLight('PointLight'));
-document.getElementById('btn-add-spot').addEventListener('click', () => addLight('SpotLight'));
+document.getElementById('btn-add-ambient')?.addEventListener('click', () => addLight('AmbientLight'));
+document.getElementById('btn-add-directional')?.addEventListener('click', () => addLight('DirectionalLight'));
+document.getElementById('btn-add-point')?.addEventListener('click', () => addLight('PointLight'));
+document.getElementById('btn-add-spot')?.addEventListener('click', () => addLight('SpotLight'));
 
 // Default lights for a nice starting point (good for car models)
 skipLightUndo = true;
