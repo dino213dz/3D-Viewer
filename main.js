@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.3';
+const APP_VERSION = '1.7.4';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -190,8 +190,58 @@ let lightIdCounter = 0;
 let skipLightUndo = false;
 
 // ========== Historique Annuler (illimité) ==========
-const undoStack = [];
-const redoStack = [];
+// Historique Annuler/Refaire **par fichier** (mémoire session)
+const historyByFile = new Map(); // fileKey -> { undo: [], redo: [] }
+let undoStack = [];
+let redoStack = [];
+
+function getHistoryKey() {
+  return currentFileKey || '__none__';
+}
+
+function saveCurrentHistoryToMap() {
+  const key = getHistoryKey();
+  historyByFile.set(key, {
+    undo: undoStack.slice(),
+    redo: redoStack.slice(),
+  });
+}
+
+/** Charge l'historique du fichier courant (vide si nouveau / jamais modifié) */
+function loadHistoryForCurrentFile() {
+  const key = getHistoryKey();
+  const stored = historyByFile.get(key);
+  if (stored) {
+    undoStack = stored.undo.slice();
+    redoStack = stored.redo.slice();
+  } else {
+    undoStack = [];
+    redoStack = [];
+  }
+  updateUndoMenu();
+}
+
+/** À appeler avant de changer de fichier : sauvegarde puis reset/load du suivant */
+function switchHistoryToFile(nextFileKey) {
+  // sauvegarder l'historique du fichier qu'on quitte
+  if (currentFileKey || undoStack.length || redoStack.length) {
+    historyByFile.set(getHistoryKey(), {
+      undo: undoStack.slice(),
+      redo: redoStack.slice(),
+    });
+  }
+  // currentFileKey sera mis à jour par l'appelant ; on prépare les stacks
+  const key = nextFileKey || '__none__';
+  const stored = historyByFile.get(key);
+  if (stored) {
+    undoStack = stored.undo.slice();
+    redoStack = stored.redo.slice();
+  } else {
+    undoStack = [];
+    redoStack = [];
+  }
+  updateUndoMenu();
+}
 
 function setHistoryBtn(btn, n, baseLabel) {
   if (!btn) return;
@@ -225,6 +275,11 @@ function pushUndo(entry) {
   undoStack.push(entry);
   // Nouvelle action : on ne peut plus refaire la branche abandonnée
   redoStack.length = 0;
+  // persister sous la clé fichier courante
+  historyByFile.set(getHistoryKey(), {
+    undo: undoStack.slice(),
+    redo: redoStack.slice(),
+  });
   updateUndoMenu();
 }
 
@@ -297,6 +352,13 @@ function applyLightState(entry, st) {
   }
 }
 
+function persistHistoryMap() {
+  historyByFile.set(getHistoryKey(), {
+    undo: undoStack.slice(),
+    redo: redoStack.slice(),
+  });
+}
+
 function performUndo() {
   const entry = undoStack.pop();
   if (!entry) {
@@ -307,6 +369,7 @@ function performUndo() {
   try {
     entry.undo();
     redoStack.push(entry);
+    persistHistoryMap();
     updateUndoMenu();
     setStatus('Annulé : ' + (entry.label || 'action'));
   } catch (err) {
@@ -326,14 +389,14 @@ function performRedo() {
   try {
     if (typeof entry.redo === 'function') {
       entry.redo();
-    } else if (typeof entry.undo === 'function') {
-      // fallback : rejouer n'est pas possible sans redo
+    } else {
       setStatus('Cette action ne peut pas être refaite.', true);
       undoStack.push(entry);
       updateUndoMenu();
       return;
     }
     undoStack.push(entry);
+    persistHistoryMap();
     updateUndoMenu();
     setStatus('Refait : ' + (entry.label || 'action'));
   } catch (err) {
@@ -641,7 +704,17 @@ async function loadFromZip(file) {
 
 function loadFile(file) {
   const name = file.name.toLowerCase();
-  currentFileKey = fileKeyFromMeta(file.name, file.size);
+  const nextKey = fileKeyFromMeta(file.name, file.size);
+  // Sauvegarder l'historique du fichier qu'on quitte (session)
+  switchHistoryToFile(nextKey);
+  currentFileKey = nextKey;
+  // Nouveau modèle 3D = nouvelles refs meshes → on repart d'un historique vide
+  // (l'ancien historique stocké reste en Map si on veut l'inspecter, mais
+  //  on ne le réapplique pas : les meshes de la session précédente sont disposés)
+  undoStack = [];
+  redoStack = [];
+  historyByFile.set(nextKey, { undo: [], redo: [] });
+  updateUndoMenu();
 
   showLoader(`Chargement de ${file.name}…`);
   setStatus(`Chargement de ${file.name}…`);
@@ -666,6 +739,8 @@ fileInput?.addEventListener('change', (e) => {
 });
 
 function clearModelAndMats() {
+  switchHistoryToFile('__none__');
+  currentFileKey = null;
   clearModel();
   refreshMaterialSelect();
   setStatus('Modèle effacé.');
@@ -2014,7 +2089,11 @@ aboutModal?.addEventListener('click', (e) => {
 
 // Modèle par défaut : 4x4.glb — aucune fenêtre ouverte au départ
 showLoader('Chargement du modèle 4x4…');
-currentFileKey = fileKeyFromMeta('4x4.glb', 0);
+{
+  const k = fileKeyFromMeta('4x4.glb', 0);
+  switchHistoryToFile(k);
+  currentFileKey = k;
+}
 gltfLoader.load(
   '4x4.glb',
   (gltf) => {
