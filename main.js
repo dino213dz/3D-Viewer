@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.2';
+const APP_VERSION = '1.7.3';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -760,20 +760,21 @@ function fitCameraToVisibleArea(object) {
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
 
   if (!portrait) {
-    // panneau à gauche : décaler la vue pour placer l'objet dans la moitié droite
+    // panneau à gauche : objet doit apparaître dans la zone libre à DROITE
     const panelW = Math.min(panel.getBoundingClientRect().width || 320, window.innerWidth * 0.45);
     const frac = Math.min(0.55, (panelW / window.innerWidth) * 1.15);
     const shift = Math.tan(hFov / 2) * dist * frac;
-    // déplacer caméra + cible vers la gauche monde pour que le sujet apparaisse à droite
-    camera.position.addScaledVector(right, -shift);
-    controls.target.addScaledVector(right, -shift);
+    // translater caméra+cible vers la droite (axe right caméra) → sujet visible à droite
+    camera.position.addScaledVector(right, shift);
+    controls.target.addScaledVector(right, shift);
   } else {
-    // panneau en bas : placer l'objet dans la partie haute
+    // panneau en bas : objet doit apparaître dans la zone libre en HAUT
     const panelH = Math.min(panel.getBoundingClientRect().height || 280, window.innerHeight * 0.45);
     const frac = Math.min(0.55, (panelH / window.innerHeight) * 1.15);
     const shift = Math.tan(vFov / 2) * dist * frac;
-    camera.position.addScaledVector(up, shift);
-    controls.target.addScaledVector(up, shift);
+    // translater vers le bas de l'écran caméra pour que le sujet monte dans le cadre
+    camera.position.addScaledVector(up, -shift);
+    controls.target.addScaledVector(up, -shift);
   }
   controls.update();
   setStatus(portrait ? 'Cadré zone visible (haut).' : 'Cadré zone visible (droite).');
