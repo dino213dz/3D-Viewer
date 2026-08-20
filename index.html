@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>3D Viewer — Visualiseur de modèles 3D</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/",
+      "jszip": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="c"></canvas>
+
+    <!-- Menu barre style macOS -->
+    <nav id="menubar">
+      <div class="menu-brand">3D Viewer</div>
+      <button type="button" id="menu-burger" class="menu-burger" aria-label="Menu" title="Menu">☰</button>
+      <ul class="menu-root" id="menu-root">
+        <li class="menu-item">
+          <button type="button" class="menu-label">Fichier</button>
+          <ul class="menu-dropdown">
+            <li><button type="button" id="menu-open">Charger un fichier…</button></li>
+            <li><button type="button" id="menu-clear">Effacer le modèle</button></li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-label">Vue</button>
+          <ul class="menu-dropdown">
+            <li><button type="button" id="menu-frame">Cadrer l'objet</button></li>
+            <li><button type="button" id="menu-reset-cam">Recentrer la caméra</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-wireframe">Wireframe</button></li>
+            <li><button type="button" id="menu-toggle-panel">Panneau latéral</button></li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-label">Éditer</button>
+          <ul class="menu-dropdown">
+            <li><button type="button" id="menu-undo">Annuler</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-show-mats">Éditeur de matériaux</button></li>
+            <li><button type="button" id="menu-apply-all">Appliquer à tout le modèle</button></li>
+            <li><button type="button" id="menu-reset-mats">Réinitialiser matériaux d'origine</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-show-lights">Lumières</button></li>
+            <li><button type="button" id="menu-add-ambient">+ Ambient</button></li>
+            <li><button type="button" id="menu-add-directional">+ Directional</button></li>
+            <li><button type="button" id="menu-add-point">+ Point</button></li>
+            <li><button type="button" id="menu-add-spot">+ Spot</button></li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-label">Aide</button>
+          <ul class="menu-dropdown">
+            <li class="menu-hint">Souris : orbit / zoom / pan</li>
+            <li class="menu-hint">Tactile : 1 doigt orbit, 2 doigts zoom</li>
+            <li class="sep"></li>
+            <li class="menu-hint">Formats : FBX, GLB, GLTF, ZIP</li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <button type="button" class="menu-label" id="menu-about">À propos</button>
+        </li>
+      </ul>
+      <div class="menu-status" id="status">Prêt</div>
+    </nav>
+
+    <input type="file" id="file-input" accept=".fbx,.glb,.gltf,.zip,.FBX,.GLB,.GLTF,.ZIP" hidden />
+
+    <!-- Panneau latéral (contenu contextuel) -->
+    <aside id="side-panel" class="side-panel hidden-ui">
+      <div class="side-titlebar">
+        <div class="traffic-lights">
+          <button type="button" id="side-close" class="tl tl-close" title="Fermer" aria-label="Fermer"></button>
+          <button type="button" id="side-min" class="tl tl-min" title="Réduire" aria-label="Réduire"></button>
+          <button type="button" id="side-max" class="tl tl-max" title="Agrandir" aria-label="Agrandir"></button>
+        </div>
+        <span id="side-title" class="side-title-text">Panneau</span>
+        <button type="button" id="side-close-x" class="win-close-x" title="Fermer" aria-label="Fermer">×</button>
+      </div>
+
+      <!-- Matériaux -->
+      <section class="side-section hidden" id="sec-mats">
+        <h3>Matériaux</h3>
+        <div class="control-row">
+          <label>Sélection</label>
+          <select id="mat-select">
+            <option value="">— aucun modèle —</option>
+          </select>
+        </div>
+        <div class="controls" id="mat-controls">
+          <div class="control-row">
+            <label>Couleur</label>
+            <input type="color" id="mat-color" value="#cccccc" />
+          </div>
+          <div class="control-row">
+            <label>Metalness</label>
+            <input type="range" id="mat-metal" min="0" max="1" step="0.01" value="0.2" />
+            <span id="val-metal">0.20</span>
+          </div>
+          <div class="control-row">
+            <label>Roughness</label>
+            <input type="range" id="mat-rough" min="0" max="1" step="0.01" value="0.55" />
+            <span id="val-rough">0.55</span>
+          </div>
+          <div class="control-row">
+            <label>Opacity</label>
+            <input type="range" id="mat-opacity" min="0" max="1" step="0.01" value="1" />
+            <span id="val-opacity">1.00</span>
+          </div>
+          <div class="control-row">
+            <label>Transparent</label>
+            <input type="checkbox" id="mat-transparent" />
+          </div>
+          <div class="control-row">
+            <label>Transmission</label>
+            <input type="range" id="mat-trans" min="0" max="1" step="0.01" value="0" />
+            <span id="val-trans">0.00</span>
+          </div>
+          <div class="control-row">
+            <label>Emissive</label>
+            <input type="color" id="mat-emissive" value="#000000" />
+          </div>
+          <div class="control-row">
+            <label>Emissive int.</label>
+            <input type="range" id="mat-emissive-int" min="0" max="5" step="0.05" value="0" />
+            <span id="val-emissive-int">0.00</span>
+          </div>
+          <div class="control-row" style="flex-wrap:wrap;gap:6px;">
+            <label style="min-width:100%">Texture</label>
+            <input type="file" id="mat-texture" accept="image/*" />
+            <button type="button" id="btn-clear-tex" class="btn small secondary" style="width:auto;margin:0;">Retirer</button>
+          </div>
+        </div>
+        <button type="button" id="btn-apply-mat" class="btn" style="margin-top:10px">Appliquer au matériau sélectionné</button>
+        <button type="button" id="btn-apply-mat-all" class="btn secondary" style="margin-top:6px">Appliquer à tous</button>
+        <button type="button" id="btn-reset-mats" class="btn secondary" style="margin-top:6px">Réinitialiser matériaux d'origine</button>
+      </section>
+
+      <!-- Lumières -->
+      <section class="side-section hidden" id="sec-lights">
+        <h3>Lumières <span id="light-count">(0)</span></h3>
+        <div class="btn-row">
+          <button type="button" id="btn-add-ambient" class="btn small">+ Amb</button>
+          <button type="button" id="btn-add-directional" class="btn small">+ Dir</button>
+          <button type="button" id="btn-add-point" class="btn small">+ Point</button>
+          <button type="button" id="btn-add-spot" class="btn small">+ Spot</button>
+        </div>
+        <div id="lights-list"></div>
+      </section>
+    </aside>
+
+    <div id="loader" class="hidden">
+      <div class="spinner"></div>
+      <p id="loader-text">Chargement…</p>
+    </div>
+
+
+    <!-- Fenêtre charger un fichier -->
+    <div id="load-window" class="floating-window hidden">
+      <div class="floating-window-inner">
+        <div class="floating-titlebar">
+          <div class="traffic-lights">
+            <button type="button" id="load-close" class="tl tl-close" title="Fermer" aria-label="Fermer"></button>
+            <span class="tl tl-min" title=""></span>
+            <span class="tl tl-max" title=""></span>
+          </div>
+          <span class="floating-title-text">Charger un fichier</span>
+          <button type="button" id="load-close-x" class="win-close-x" title="Fermer" aria-label="Fermer">×</button>
+        </div>
+        <div class="floating-body">
+          <div id="load-drop-zone" class="load-drop-zone">
+            <p class="load-drop-main">Glisse un fichier ici</p>
+            <p class="load-drop-hint">Formats : .fbx · .glb · .gltf · .zip</p>
+          </div>
+          <button type="button" id="load-browse-btn" class="btn" style="width:100%;margin-top:12px">Parcourir…</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal À propos -->
+    <div id="about-modal" class="modal hidden">
+      <div class="modal-content">
+        <button type="button" class="modal-close" id="about-close">×</button>
+        <h2>À propos — 3D Viewer</h2>
+        <div class="about-body">
+          <p><strong>Version</strong> : <span id="about-version">1.6.7</span></p>
+          <p><strong>Date de création</strong> : 19 août 2026</p>
+          <p><strong>Dernière mise à jour</strong> : <span id="about-updated">20 août 2026</span></p>
+          <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
+          <hr />
+          <p>Visualiseur 3D web pour modèles FBX / glTF / ZIP, lumières et matériaux.</p>
+          <p>
+            <a href="https://chorfa.fr" target="_blank" rel="noopener">chorfa.fr</a><br />
+            <a href="mailto:webmaster@chorfa.fr">webmaster@chorfa.fr</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
