@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.8';
+const APP_VERSION = '1.7.9';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -908,6 +908,7 @@ function showSection(id, title) {
   lastPanelSection = { id, title: title || 'Panneau' };
   if (id === 'sec-props') refreshFileProps();
   layoutFloatingWindows();
+  updateToolbarActiveState();
 }
 
 function toggleSidePanel() {
@@ -931,6 +932,14 @@ function toggleSidePanel() {
 
 function closeSidePanel() {
   sidePanel.classList.add('hidden-ui');
+  updateToolbarActiveState();
+}
+
+function updateToolbarActiveState() {
+  const matsBtn = document.getElementById('toolbar-mats');
+  const lightsBtn = document.getElementById('toolbar-lights');
+  if (matsBtn) matsBtn.classList.toggle('is-active', isSectionVisible('sec-mats'));
+  if (lightsBtn) lightsBtn.classList.toggle('is-active', isSectionVisible('sec-lights'));
 }
 
 function formatBytes(n) {
