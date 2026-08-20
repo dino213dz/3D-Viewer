@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.6.7';
+const APP_VERSION = '1.6.8';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -193,12 +193,19 @@ let skipLightUndo = false;
 const undoStack = [];
 
 function updateUndoMenu() {
-  const btn = document.getElementById('menu-undo');
-  if (!btn) return;
   const n = undoStack.length;
-  btn.textContent = n ? (`Annuler (${n})`) : 'Annuler';
-  btn.disabled = n === 0;
-  btn.style.opacity = n ? '1' : '0.45';
+  const btn = document.getElementById('menu-undo');
+  if (btn) {
+    btn.textContent = n ? ('↩️ Annuler (' + n + ')') : '↩️ Annuler';
+    btn.disabled = n === 0;
+    btn.style.opacity = n ? '1' : '0.45';
+  }
+  const tb = document.getElementById('toolbar-undo');
+  if (tb) {
+    tb.disabled = n === 0;
+    tb.classList.toggle('disabled', n === 0);
+    tb.title = n ? ('Annuler (' + n + ') — Ctrl+Z') : 'Rien à annuler';
+  }
 }
 
 function pushUndo(entry) {
@@ -287,9 +294,11 @@ function performUndo() {
     setStatus('Annulé : ' + (entry.label || 'action'));
   } catch (err) {
     console.error(err);
-    setStatus("Échec de l'annulation", true);
+    setStatus('Échec de l\\'annulation', true);
   }
 }
+
+
 
 const statusEl = document.getElementById('status');
 const loaderEl = document.getElementById('loader');
@@ -1094,14 +1103,11 @@ function buildLightCard(entry) {
 
   // Events (+ undo sur modification)
   const pushLightModUndo = (() => {
-    let last = null;
+    let armed = false;
     return () => {
-      const st = captureLightState(entry);
-      // éviter doublons identiques successifs
-      const key = JSON.stringify(st);
-      if (key === last) return;
-      last = key;
-      const before = st;
+      if (armed) return;
+      armed = true;
+      const before = captureLightState(entry);
       pushUndo({
         label: 'Modif. lumière #' + id,
         undo: () => {
@@ -1109,6 +1115,8 @@ function buildLightCard(entry) {
           if (cur) applyLightState(cur, before);
         },
       });
+      // ré-armer après la fin du geste (change/pointerup)
+      setTimeout(() => { armed = false; }, 800);
     };
   })();
 

@@ -25,52 +25,53 @@
       <button type="button" id="menu-burger" class="menu-burger" aria-label="Menu" title="Menu">☰</button>
       <ul class="menu-root" id="menu-root">
         <li class="menu-item">
-          <button type="button" class="menu-label">Fichier</button>
+          <button type="button" class="menu-label">📁 Fichier</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-open">Charger un fichier…</button></li>
-            <li><button type="button" id="menu-clear">Effacer le modèle</button></li>
+            <li><button type="button" id="menu-open">📂 Charger un fichier…</button></li>
+            <li><button type="button" id="menu-clear">🗑️ Effacer le modèle</button></li>
           </ul>
         </li>
         <li class="menu-item">
-          <button type="button" class="menu-label">Vue</button>
+          <button type="button" class="menu-label">✏️ Éditer</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-frame">Cadrer l'objet</button></li>
-            <li><button type="button" id="menu-reset-cam">Recentrer la caméra</button></li>
+            <li><button type="button" id="menu-undo">↩️ Annuler</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-wireframe">Wireframe</button></li>
-            <li><button type="button" id="menu-toggle-panel">Panneau latéral</button></li>
+            <li><button type="button" id="menu-show-mats">🎨 Éditeur de matériaux</button></li>
+            <li><button type="button" id="menu-apply-all">✅ Appliquer à tout le modèle</button></li>
+            <li><button type="button" id="menu-reset-mats">🔄 Réinitialiser matériaux d'origine</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-show-lights">💡 Lumières</button></li>
+            <li><button type="button" id="menu-add-ambient">☀️ + Ambient</button></li>
+            <li><button type="button" id="menu-add-directional">🔆 + Directional</button></li>
+            <li><button type="button" id="menu-add-point">✨ + Point</button></li>
+            <li><button type="button" id="menu-add-spot">🔦 + Spot</button></li>
           </ul>
         </li>
         <li class="menu-item">
-          <button type="button" class="menu-label">Éditer</button>
+          <button type="button" class="menu-label">👁️ Vue</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-undo">Annuler</button></li>
+            <li><button type="button" id="menu-frame">🖼️ Cadrer l'objet</button></li>
+            <li><button type="button" id="menu-reset-cam">🎯 Recentrer la caméra</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-show-mats">Éditeur de matériaux</button></li>
-            <li><button type="button" id="menu-apply-all">Appliquer à tout le modèle</button></li>
-            <li><button type="button" id="menu-reset-mats">Réinitialiser matériaux d'origine</button></li>
-            <li class="sep"></li>
-            <li><button type="button" id="menu-show-lights">Lumières</button></li>
-            <li><button type="button" id="menu-add-ambient">+ Ambient</button></li>
-            <li><button type="button" id="menu-add-directional">+ Directional</button></li>
-            <li><button type="button" id="menu-add-point">+ Point</button></li>
-            <li><button type="button" id="menu-add-spot">+ Spot</button></li>
+            <li><button type="button" id="menu-wireframe">🕸️ Wireframe</button></li>
+            <li><button type="button" id="menu-toggle-panel">📋 Panneau latéral</button></li>
           </ul>
         </li>
         <li class="menu-item">
-          <button type="button" class="menu-label">Aide</button>
+          <button type="button" class="menu-label">❓ Aide</button>
           <ul class="menu-dropdown">
-            <li class="menu-hint">Souris : orbit / zoom / pan</li>
-            <li class="menu-hint">Tactile : 1 doigt orbit, 2 doigts zoom</li>
+            <li class="menu-hint">🖱️ Souris : orbit / zoom / pan</li>
+            <li class="menu-hint">👆 Tactile : 1 doigt orbit, 2 doigts zoom</li>
             <li class="sep"></li>
-            <li class="menu-hint">Formats : FBX, GLB, GLTF, ZIP</li>
+            <li class="menu-hint">📦 Formats : FBX, GLB, GLTF, ZIP</li>
           </ul>
         </li>
         <li class="menu-item">
-          <button type="button" class="menu-label" id="menu-about">À propos</button>
+          <button type="button" class="menu-label" id="menu-about">ℹ️ À propos</button>
         </li>
       </ul>
       <div class="menu-status" id="status">Prêt</div>
+      <button type="button" id="toolbar-undo" class="toolbar-undo" title="Annuler (Ctrl+Z)" aria-label="Annuler">↩️</button>
     </nav>
 
     <input type="file" id="file-input" accept=".fbx,.glb,.gltf,.zip,.FBX,.GLB,.GLTF,.ZIP" hidden />
@@ -192,7 +193,7 @@
         <button type="button" class="modal-close" id="about-close">×</button>
         <h2>À propos — 3D Viewer</h2>
         <div class="about-body">
-          <p><strong>Version</strong> : <span id="about-version">1.6.7</span></p>
+          <p><strong>Version</strong> : <span id="about-version">1.6.8</span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">20 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>

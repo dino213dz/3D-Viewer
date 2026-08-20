@@ -650,3 +650,31 @@ html, body {
   cursor: default;
   pointer-events: none;
 }
+
+.toolbar-undo {
+  margin-left: 8px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: #e8eaed;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.toolbar-undo:hover:not(.disabled):not(:disabled) {
+  background: var(--accent);
+}
+.toolbar-undo.disabled,
+.toolbar-undo:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.menu-status {
+  margin-left: auto;
+}
