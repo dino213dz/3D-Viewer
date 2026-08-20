@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.6.9';
+const APP_VERSION = '1.7.0';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -196,13 +196,17 @@ function updateUndoMenu() {
   const n = undoStack.length;
   const btn = document.getElementById('menu-undo');
   if (btn) {
-    btn.textContent = n ? ('↩️ Annuler (' + n + ')') : '↩️ Annuler';
-    btn.disabled = n === 0;
+    const label = n ? (' Annuler (' + n + ')') : ' Annuler';
+    // garder l'icône SVG si présente
+    const ico = btn.querySelector('svg.ico');
+    btn.textContent = '';
+    if (ico) btn.appendChild(ico);
+    btn.appendChild(document.createTextNode(label));
+    btn.classList.toggle('is-disabled', n === 0);
     btn.style.opacity = n ? '1' : '0.45';
   }
   const tb = document.getElementById('toolbar-undo');
   if (tb) {
-    tb.disabled = n === 0;
     tb.classList.toggle('disabled', n === 0);
     tb.title = n ? ('Annuler (' + n + ') — Ctrl+Z') : 'Rien à annuler';
   }
@@ -849,7 +853,20 @@ fileInput?.addEventListener('change', () => {
 }, true);
 
 document.getElementById('menu-clear')?.addEventListener('click', clearModelAndMats);
-document.getElementById('menu-undo')?.addEventListener('click', performUndo);
+
+function onUndoClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  performUndo();
+  collapseMenus();
+}
+document.getElementById('menu-undo')?.addEventListener('click', onUndoClick);
+document.getElementById('toolbar-undo')?.addEventListener('click', onUndoClick);
+document.getElementById('toolbar-reframe')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  doFrame();
+});
 // Raccourci Ctrl/Cmd+Z
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
@@ -860,7 +877,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 document.getElementById('menu-frame')?.addEventListener('click', doFrame);
-document.getElementById('menu-reset-cam')?.addEventListener('click', doResetCam);
 document.getElementById('menu-wireframe')?.addEventListener('click', toggleWireframe);
 document.getElementById('menu-toggle-panel')?.addEventListener('click', toggleSidePanel);
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
@@ -1448,6 +1464,17 @@ function loadMaterialToUI(index) {
   if (tr) tr.checked = !!m.transparent;
   const em = document.getElementById('mat-emissive');
   if (em && m.emissive) em.value = '#' + m.emissive.getHexString();
+  const rx = m.map?.repeat?.x ?? 1;
+  const ry = m.map?.repeat?.y ?? 1;
+  const setTex = (id, valId, v) => {
+    const el = document.getElementById(id);
+    const val = document.getElementById(valId);
+    if (el) el.value = v;
+    if (val) val.textContent = Number(v).toFixed(2);
+  };
+  setTex('mat-tex-sx', 'val-tex-sx', rx);
+  setTex('mat-tex-sy', 'val-tex-sy', ry);
+  setTex('mat-tex-sz', 'val-tex-sz', 1);
 }
 
 function ensurePhysical(m) {
@@ -1480,6 +1507,15 @@ function applyToMaterial(m, allValues) {
   if (pendingTexture) {
     mat.map = pendingTexture;
     mat.map.colorSpace = THREE.SRGBColorSpace;
+    mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
+    mat.map.needsUpdate = true;
+  }
+  if (mat.map && values.texSx != null) {
+    mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
+    // Z sert de facteur global si besoin, appliqué sur X/Y
+    const zx = values.texSx * (values.texSz || 1);
+    const zy = values.texSy * (values.texSz || 1);
+    mat.map.repeat.set(zx, zy);
     mat.map.needsUpdate = true;
   }
   mat.needsUpdate = true;
@@ -1496,6 +1532,9 @@ function readMatUI() {
     transmission: parseFloat(document.getElementById('mat-trans').value),
     emissive: document.getElementById('mat-emissive').value,
     emissiveInt: parseFloat(document.getElementById('mat-emissive-int').value),
+    texSx: parseFloat(document.getElementById('mat-tex-sx')?.value || '1'),
+    texSy: parseFloat(document.getElementById('mat-tex-sy')?.value || '1'),
+    texSz: parseFloat(document.getElementById('mat-tex-sz')?.value || '1'),
   };
 }
 
@@ -1557,18 +1596,37 @@ document.getElementById('mat-select')?.addEventListener('change', (e) => {
   if (!isNaN(i)) loadMaterialToUI(i);
 });
 
-['mat-metal', 'mat-rough', 'mat-opacity', 'mat-trans', 'mat-emissive-int'].forEach((id) => {
+['mat-metal', 'mat-rough', 'mat-opacity', 'mat-trans', 'mat-emissive-int', 'mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
   const map = {
     'mat-metal': 'val-metal',
     'mat-rough': 'val-rough',
     'mat-opacity': 'val-opacity',
     'mat-trans': 'val-trans',
     'mat-emissive-int': 'val-emissive-int',
+    'mat-tex-sx': 'val-tex-sx',
+    'mat-tex-sy': 'val-tex-sy',
+    'mat-tex-sz': 'val-tex-sz',
   };
   document.getElementById(id)?.addEventListener('input', (e) => {
     const val = document.getElementById(map[id]);
     if (val) val.textContent = parseFloat(e.target.value).toFixed(2);
   });
+});
+
+// Aperçu live de l'échelle de texture sur le matériau sélectionné
+function applyTexScaleLive() {
+  const entry = getSelectedMaterialEntry();
+  if (!entry?.material?.map) return;
+  const sx = parseFloat(document.getElementById('mat-tex-sx')?.value || '1');
+  const sy = parseFloat(document.getElementById('mat-tex-sy')?.value || '1');
+  const sz = parseFloat(document.getElementById('mat-tex-sz')?.value || '1');
+  entry.material.map.wrapS = entry.material.map.wrapT = THREE.RepeatWrapping;
+  entry.material.map.repeat.set(sx * sz, sy * sz);
+  entry.material.map.needsUpdate = true;
+  entry.material.needsUpdate = true;
+}
+['mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', applyTexScaleLive);
 });
 
 document.getElementById('mat-texture')?.addEventListener('change', (e) => {

@@ -678,3 +678,61 @@ html, body {
 .menu-status {
   margin-left: auto;
 }
+
+svg.ico {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 6px;
+  color: #fff;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.menu-label svg.ico { margin-right: 4px; }
+.menu-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  text-align: left;
+}
+.menu-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+.menu-status {
+  margin-left: 0;
+  max-width: 28vw;
+}
+.toolbar-btn {
+  width: 30px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.toolbar-btn svg.ico {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+}
+.toolbar-btn:hover:not(.disabled) {
+  background: var(--accent);
+}
+.toolbar-btn.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.menu-dropdown button.is-disabled {
+  opacity: 0.45;
+}
