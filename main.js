@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '1.7.4';
+const APP_VERSION = '1.7.5';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -631,6 +631,7 @@ function loadModelFromBlob(blob, fileName, displayName) {
     scene.add(currentModel);
     fitCameraToObject(currentModel);
     refreshMaterialSelect();
+    refreshFileProps();
     const restored = restorePrefsAfterLoad();
     if (!restored) scheduleSavePrefs();
     hideLoader();
@@ -894,23 +895,96 @@ function toggleWireframe() {
 
 const sidePanel = document.getElementById('side-panel');
 const sideTitle = document.getElementById('side-title');
+/** Dernière section de panneau affichée */
+let lastPanelSection = { id: 'sec-props', title: 'Propriétés' };
 
 function showSection(id, title) {
   sidePanel.classList.remove('hidden-ui');
+  sidePanel.classList.remove('minimized');
   document.querySelectorAll('.side-section').forEach((s) => s.classList.add('hidden'));
   const sec = document.getElementById(id);
   if (sec) sec.classList.remove('hidden');
   if (sideTitle) sideTitle.textContent = title || 'Panneau';
+  lastPanelSection = { id, title: title || 'Panneau' };
+  if (id === 'sec-props') refreshFileProps();
   layoutFloatingWindows();
 }
 
 function toggleSidePanel() {
-  sidePanel.classList.toggle('hidden-ui');
-  setStatus(sidePanel.classList.contains('hidden-ui') ? 'Panneau masqué.' : 'Panneau affiché.');
+  if (sidePanel.classList.contains('hidden-ui')) {
+    // Ouvrir : dernière fenêtre, ou propriétés par défaut
+    const id = lastPanelSection?.id || 'sec-props';
+    const title = lastPanelSection?.title || 'Propriétés';
+    // si aucune section visible (cas 1ère ouverture), forcer props
+    const anyVisible = !!document.querySelector('.side-section:not(.hidden)');
+    if (!anyVisible) {
+      showSection('sec-props', 'Propriétés');
+    } else {
+      showSection(id, title);
+    }
+    setStatus('Panneau affiché.');
+  } else {
+    sidePanel.classList.add('hidden-ui');
+    setStatus('Panneau masqué.');
+  }
 }
 
 function closeSidePanel() {
   sidePanel.classList.add('hidden-ui');
+}
+
+function formatBytes(n) {
+  if (n == null || isNaN(n) || n <= 0) return '—';
+  if (n < 1024) return n + ' o';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' Ko';
+  return (n / (1024 * 1024)).toFixed(2) + ' Mo';
+}
+
+function refreshFileProps() {
+  const body = document.getElementById('file-props-body');
+  if (!body) return;
+  if (!currentModel) {
+    body.innerHTML = '<p class="muted">Aucun modèle chargé.</p>';
+    return;
+  }
+  let meshes = 0;
+  let tris = 0;
+  let verts = 0;
+  const matSet = new Set();
+  currentModel.traverse((child) => {
+    if (!child.isMesh) return;
+    meshes++;
+    const geo = child.geometry;
+    if (geo) {
+      const pos = geo.attributes?.position;
+      if (pos) verts += pos.count;
+      if (geo.index) tris += geo.index.count / 3;
+      else if (pos) tris += pos.count / 3;
+    }
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+    mats.forEach((m) => { if (m) matSet.add(m.uuid); });
+  });
+  const box = new THREE.Box3().setFromObject(currentModel);
+  const size = box.getSize(new THREE.Vector3());
+  const name = (currentFileKey || '').replace(/^3dviewer_prefs_v1:/, '').split('::')[0] || '—';
+  const rows = [
+    ['Nom', name],
+    ['Meshes', String(meshes)],
+    ['Vertices', Math.round(verts).toLocaleString('fr-FR')],
+    ['Triangles (approx.)', Math.round(tris).toLocaleString('fr-FR')],
+    ['Matériaux', String(matSet.size)],
+    ['Dimensions X', size.x.toFixed(3)],
+    ['Dimensions Y', size.y.toFixed(3)],
+    ['Dimensions Z', size.z.toFixed(3)],
+  ];
+  body.innerHTML = rows.map(([l, v]) =>
+    '<div class="prop-row"><span class="prop-label">' + l + '</span><span class="prop-value">' + v + '</span></div>'
+  ).join('');
+}
+
+function showFilePropsPanel() {
+  refreshFileProps();
+  showSection('sec-props', 'Propriétés');
 }
 document.getElementById('side-close')?.addEventListener('click', closeSidePanel);
 document.getElementById('side-close-x')?.addEventListener('click', closeSidePanel);
@@ -1125,6 +1199,7 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('menu-frame')?.addEventListener('click', doFrame);
 
 document.getElementById('menu-wireframe')?.addEventListener('click', toggleWireframe);
+document.getElementById('menu-file-props')?.addEventListener('click', showFilePropsPanel);
 document.getElementById('menu-toggle-panel')?.addEventListener('click', toggleSidePanel);
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
   showSection('sec-mats', 'Matériaux');
@@ -2103,6 +2178,7 @@ gltfLoader.load(
       scene.add(currentModel);
       fitCameraToObject(currentModel);
       refreshMaterialSelect();
+      refreshFileProps();
       restorePrefsAfterLoad();
       setStatus('Modèle 4x4 chargé.');
     } catch (err) {
