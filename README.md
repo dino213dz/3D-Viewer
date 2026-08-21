@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 23:54 CEST  
+**Dernière mise à jour :** 22 août 2026, 00:02 CEST  
 
-**Version :** 2.2.5
+**Version :** 2.2.6
 
 ---
 
@@ -45,6 +45,10 @@
 ---
 
 ## Historique des versions
+
+### 2.2.6 — 22 août 2026, 00:02 CEST
+- Fenêtre Lumières : restauration de la liste si vide + taille mini fiable
+- Taille minimale des panneaux (300×280) pour éviter un aspect trop réduit
 
 ### 2.2.5 — 21 août 2026, 23:54 CEST
 - Matériaux : bouton −/+ au niveau du titre de section (comme les lumières)

@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.5';
+const APP_VERSION = '2.2.6';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -957,16 +957,20 @@ function layoutFloatingWindows() {
       panel.style.bottom = margin + 'px';
       panel.style.width = 'auto';
       panel.style.maxWidth = 'calc(100vw - ' + (margin * 2) + 'px)';
-      panel.style.maxHeight = 'min(42vh, 360px)';
+      panel.style.maxHeight = 'min(48vh, 420px)';
+      panel.style.minHeight = (PANEL_MIN_H || 280) + 'px';
+      panel.style.minWidth = 'min(100%, ' + (PANEL_MIN_W || 300) + 'px)';
     } else {
       // haut gauche
       panel.style.left = margin + 'px';
       panel.style.right = 'auto';
       panel.style.top = (menuH + margin) + 'px';
       panel.style.bottom = 'auto';
-      panel.style.width = '';
+      if (!panel.style.width) panel.style.width = 'min(340px, calc(100vw - 20px))';
       panel.style.maxWidth = 'min(340px, calc(100vw - 20px))';
       panel.style.maxHeight = 'calc(100vh - ' + (menuH + margin * 2) + 'px)';
+      panel.style.minHeight = (PANEL_MIN_H || 280) + 'px';
+      panel.style.minWidth = (PANEL_MIN_W || 300) + 'px';
     }
   }
 
@@ -1144,6 +1148,43 @@ const sideTitle = document.getElementById('side-title');
 /** Dernière section de panneau affichée */
 let lastPanelSection = { id: 'sec-props', title: 'Propriétés' };
 
+
+const PANEL_MIN_W = 300;
+const PANEL_MIN_H = 280;
+
+function ensurePanelMinSize() {
+  const panel = document.getElementById('side-panel');
+  if (!panel || panel.classList.contains('hidden-ui')) return;
+  panel.classList.remove('minimized');
+  const rect = panel.getBoundingClientRect();
+  let w = rect.width;
+  let h = rect.height;
+  // si hauteur trop petite (contenu invisible)
+  if (h < PANEL_MIN_H || (panel.style.height && parseFloat(panel.style.height) < PANEL_MIN_H)) {
+    h = Math.min(Math.max(PANEL_MIN_H, window.innerHeight * 0.45), window.innerHeight - 60);
+    panel.style.height = h + 'px';
+    panel.style.maxHeight = 'none';
+  }
+  if (w < PANEL_MIN_W || (panel.style.width && parseFloat(panel.style.width) < PANEL_MIN_W)) {
+    w = Math.min(Math.max(PANEL_MIN_W, 320), window.innerWidth - 20);
+    panel.style.width = w + 'px';
+  }
+}
+
+function rebuildLightsListIfNeeded() {
+  const list = document.getElementById('lights-list');
+  if (!list) return;
+  if (list.children.length === 0 && typeof lights !== 'undefined' && lights.length) {
+    lights.forEach((entry) => {
+      if (!entry.card || !entry.card.isConnected) {
+        entry.card = buildLightCard(entry);
+      }
+      if (entry.card && !entry.card.parentElement) list.appendChild(entry.card);
+    });
+  }
+  updateLightCount();
+}
+
 function showSection(id, title) {
   // Localize common titles
   if (currentLang === 'en') {
@@ -1162,7 +1203,9 @@ function showSection(id, title) {
   if (sideTitle) sideTitle.textContent = title || 'Panneau';
   lastPanelSection = { id, title: title || 'Panneau' };
   if (id === 'sec-props') refreshFileProps();
+  if (id === 'sec-lights') rebuildLightsListIfNeeded();
   layoutFloatingWindows();
+  ensurePanelMinSize();
   updateToolbarActiveState();
 }
 
@@ -1335,8 +1378,8 @@ document.getElementById('side-min')?.addEventListener('click', () => {
   });
   handle.addEventListener('pointermove', (e) => {
     if (!resizing) return;
-    const w = Math.max(260, startW + (e.clientX - startX));
-    const h = Math.max(180, startH + (e.clientY - startY));
+    const w = Math.max(PANEL_MIN_W || 300, startW + (e.clientX - startX));
+    const h = Math.max(PANEL_MIN_H || 280, startH + (e.clientY - startY));
     sidePanel.style.width = w + 'px';
     sidePanel.style.height = h + 'px';
     sidePanel.style.maxHeight = 'none';

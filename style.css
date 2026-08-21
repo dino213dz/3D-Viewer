@@ -2288,3 +2288,37 @@ body.theme-light .mat-group {
   min-height: 30px !important;
   white-space: nowrap;
 }
+
+/* 2.2.6 panel min size */
+.side-panel {
+  min-width: 300px !important;
+  min-height: 280px !important;
+  height: auto;
+}
+.side-panel.minimized {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+.side-panel .side-section {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#lights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 40px;
+  padding-bottom: 8px;
+}
+.light-card {
+  display: block;
+  visibility: visible;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
