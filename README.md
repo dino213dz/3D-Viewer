@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 18:25 CEST  
+**Dernière mise à jour :** 21 août 2026, 18:38 CEST  
 
-**Version :** 2.1.6
+**Version :** 2.1.7
 
 ---
 
@@ -44,6 +44,11 @@
 ---
 
 ## Historique des versions
+
+### 2.1.7 — 21 août 2026, 18:38 CEST
+- Barre de titre : titre et boutons centrés verticalement (plus collés en haut)
+- Mode clair : liens À propos visibles (orange)
+- Mode clair mobile : menu clair (plus sombre)
 
 ### 2.1.6 — 21 août 2026, 18:25 CEST
 - Mode clair : fenêtre À propos adaptée (plus sombre)

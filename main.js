@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.6';
+const APP_VERSION = '2.1.7';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');

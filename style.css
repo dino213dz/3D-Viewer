@@ -221,18 +221,20 @@ html, body {
 .side-titlebar {
   cursor: move;
   flex-shrink: 0;
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 5;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: -12px -12px 12px -12px;
-  padding: 10px 12px;
+  margin: 0;
+  padding: 0 12px;
   background: linear-gradient(180deg, #3a3c44 0%, #2c2e36 100%);
   border-bottom: 1px solid #1a1b20;
   border-radius: 10px 10px 0 0;
+  height: 36px;
   min-height: 36px;
+  box-sizing: border-box;
 }
 
 .traffic-lights {
@@ -1630,4 +1632,186 @@ body.theme-light .side-panel,
 body.theme-light .floating-window-inner {
   background: rgba(223,223,223,0.96) !important;
   color: #000 !important;
+}
+
+/* ========== 2.1.7 definitive UI fixes ========== */
+
+/* Title bar: fixed height, vertically centered title + buttons */
+.side-panel .side-titlebar,
+.floating-window-inner .side-titlebar,
+.floating-window-inner .floating-titlebar,
+.side-titlebar,
+.floating-titlebar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  line-height: 36px !important;
+}
+
+.side-titlebar .side-title-text,
+.floating-titlebar .side-title-text,
+.floating-titlebar .floating-title-text,
+.side-title-text,
+.floating-title-text {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+  height: auto !important;
+  max-width: calc(100% - 100px) !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.side-titlebar .traffic-lights,
+.side-titlebar .traffic-lights-right,
+.floating-titlebar .traffic-lights,
+.floating-titlebar .traffic-lights-right,
+.traffic-lights-right {
+  position: absolute !important;
+  right: 10px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  height: 16px !important;
+  line-height: 1 !important;
+}
+
+.tl {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  border-radius: 3px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  opacity: 0.8;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+.tl::after {
+  opacity: 1 !important;
+  color: inherit !important;
+  position: static !important;
+  transform: none !important;
+  line-height: 1 !important;
+}
+.tl-close::before,
+.tl-close::after {
+  /* keep pseudo icons from 2.1.5 if present; ensure visibility */
+  background: currentColor;
+}
+.tl:hover {
+  opacity: 1 !important;
+  background: rgba(255,255,255,0.15) !important;
+}
+
+/* Light mode — about links visible */
+body.theme-light .about-link,
+body.theme-light .about-link:link,
+body.theme-light .about-link:visited,
+body.theme-light .about-body a,
+body.theme-light .about-body a:link,
+body.theme-light .about-body a:visited {
+  color: #F54927 !important;
+  opacity: 1 !important;
+}
+body.theme-light .about-link .about-ico,
+body.theme-light .about-link svg,
+body.theme-light .about-ico {
+  color: #F54927 !important;
+  stroke: #F54927 !important;
+  fill: #F54927 !important;
+  opacity: 1 !important;
+}
+body.theme-light .about-link:hover {
+  color: #d43d1f !important;
+  text-decoration: underline !important;
+}
+
+/* Light mode — mobile menu not dark */
+body.theme-light #menubar {
+  background: #c0c0c0 !important;
+  color: #000 !important;
+}
+body.theme-light .menu-root,
+body.theme-light .menu-root.menu-open {
+  background: #dfdfdf !important;
+  color: #000 !important;
+  border-bottom: 1px solid #808080 !important;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.15) !important;
+}
+body.theme-light .menu-dropdown,
+body.theme-light .menu-subdropdown,
+body.theme-light .ctx-menu {
+  background: #dfdfdf !important;
+  color: #000 !important;
+  border-color: #808080 !important;
+}
+body.theme-light .menu-label,
+body.theme-light .menu-dropdown button,
+body.theme-light .menu-hint-label,
+body.theme-light .menu-brand,
+body.theme-light .toolbar-btn {
+  color: #000 !important;
+}
+body.theme-light .menu-item.open > .menu-dropdown {
+  background: #dfdfdf !important;
+}
+@media (max-width: 720px) {
+  body.theme-light .menu-root,
+  body.theme-light .menu-root.menu-open {
+    background: #dfdfdf !important;
+    color: #000 !important;
+  }
+  body.theme-light .menu-dropdown {
+    background: #d0d0d0 !important;
+  }
+  body.theme-light .menu-burger {
+    color: #000 !important;
+  }
+}
+
+body.theme-light .side-titlebar,
+body.theme-light .floating-titlebar {
+  background: #c0c0c0 !important;
+  border-bottom: 1px solid #808080 !important;
+  color: #000 !important;
+}
+body.theme-light .side-title-text,
+body.theme-light .floating-title-text {
+  color: #000 !important;
+}
+body.theme-light .tl {
+  color: #000 !important;
+  border-color: #000 !important;
 }
