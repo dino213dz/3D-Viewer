@@ -2322,3 +2322,22 @@ body.theme-light .mat-group {
   gap: 6px;
   margin-bottom: 10px;
 }
+
+/* 2.2.7 contain panel content */
+.side-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.side-panel .side-section {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+.side-panel.hidden-ui {
+  display: none !important;
+}

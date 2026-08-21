@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 22 août 2026, 00:02 CEST  
+**Dernière mise à jour :** 22 août 2026, 00:07 CEST  
 
-**Version :** 2.2.6
+**Version :** 2.2.7
 
 ---
 
@@ -45,6 +45,10 @@
 ---
 
 ## Historique des versions
+
+### 2.2.7 — 22 août 2026, 00:07 CEST
+- Fix critique : HTML du panneau Matériaux déséquilibré (contenu Lumières hors fenêtre)
+- Contenu des sections correctement contenu dans le panneau flottant
 
 ### 2.2.6 — 22 août 2026, 00:02 CEST
 - Fenêtre Lumières : restauration de la liste si vide + taille mini fiable
