@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 21:14 CEST  
+**Dernière mise à jour :** 21 août 2026, 22:00 CEST  
 
-**Version :** 2.2.0
+**Version :** 2.2.1
 
 ---
 
@@ -44,6 +44,11 @@
 ---
 
 ## Historique des versions
+
+### 2.2.1 — 21 août 2026, 22:00 CEST
+- Liste matériaux : mise à jour correcte du nom / pastille à chaque sélection
+- Sections matériaux : icône − / + à droite du titre
+- Cadrer zone visible : place l’objet dans la zone libre (hors panneaux)
 
 ### 2.2.0 — 21 août 2026, 21:14 CEST
 - Propriétés fichier : nom et taille mis à jour au changement de fichier

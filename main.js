@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.2.1';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -995,69 +995,87 @@ function layoutFloatingWindows() {
  */
 function fitCameraToVisibleArea(object) {
   if (!object) return;
-  // Mesurer le panneau APRÈS layout
   if (typeof layoutFloatingWindows === 'function') layoutFloatingWindows();
 
-  const panel = document.getElementById('side-panel');
-  const panelOpen = panel && !panel.classList.contains('hidden-ui') && panel.offsetParent !== null;
-  const rect = panelOpen ? panel.getBoundingClientRect() : null;
+  // Rectangle libre de l'écran (sans panneau / fenêtres flottantes)
+  const W = window.innerWidth || 1;
+  const H = window.innerHeight || 1;
+  let free = { left: 0, top: 0, right: W, bottom: H };
 
-  // Fraction de l'écran masquée par le panneau
-  let leftFrac = 0, rightFrac = 0, topFrac = 0, bottomFrac = 0;
-  if (rect && rect.width > 40 && rect.height > 40) {
-    const W = window.innerWidth || 1;
-    const H = window.innerHeight || 1;
-    // panneau chevauche quelle zone ?
-    if (rect.left < W * 0.35 && rect.right < W * 0.7) {
-      leftFrac = Math.min(0.6, rect.right / W);
-    } else if (rect.right > W * 0.65) {
-      rightFrac = Math.min(0.6, (W - rect.left) / W);
-    }
-    if (rect.top < H * 0.35 && rect.bottom < H * 0.7) {
-      topFrac = Math.min(0.55, rect.bottom / H);
-    } else if (rect.bottom > H * 0.6) {
-      bottomFrac = Math.min(0.6, (H - rect.top) / H);
-    }
-    // mobile paysage : panneau souvent à gauche/plein hauteur
-    if (!isPortraitLayout() && rect.height > H * 0.5) {
-      if (rect.left < W * 0.5) leftFrac = Math.max(leftFrac, Math.min(0.65, rect.right / W));
-      else rightFrac = Math.max(rightFrac, Math.min(0.65, (W - rect.left) / W));
-    }
-  }
+  const punch = (el) => {
+    if (!el || el.classList.contains('hidden') || el.classList.contains('hidden-ui')) return;
+    if (el.offsetParent === null && getComputedStyle(el).display === 'none') return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 48 || r.height < 48) return;
+    // Si l'élément occupe un côté, réduire le rectangle libre
+    const coverL = r.left <= 8 && r.right < W * 0.75;
+    const coverR = r.right >= W - 8 && r.left > W * 0.25;
+    const coverT = r.top <= 48 && r.bottom < H * 0.75;
+    const coverB = r.bottom >= H - 28 && r.top > H * 0.25;
+    if (coverL) free.left = Math.max(free.left, r.right);
+    if (coverR) free.right = Math.min(free.right, r.left);
+    if (coverT) free.top = Math.max(free.top, r.bottom);
+    if (coverB) free.bottom = Math.min(free.bottom, r.top);
+  };
+  punch(document.getElementById('side-panel'));
+  punch(document.getElementById('load-window'));
+  punch(document.getElementById('menubar'));
+  punch(document.getElementById('statusbar'));
 
-  // Cadre de base dans le viewport utile (réduire distance si besoin)
+  // Fallback si rectangle invalide
+  if (free.right - free.left < W * 0.25) { free.left = 0; free.right = W; }
+  if (free.bottom - free.top < H * 0.25) { free.top = 40; free.bottom = H - 24; }
+
+  const freeW = free.right - free.left;
+  const freeH = free.bottom - free.top;
+  const freeCx = (free.left + free.right) / 2;
+  const freeCy = (free.top + free.bottom) / 2;
+
+  // Cadre de base
   fitCameraToObject(object);
+  camera.updateMatrixWorld(true);
 
   const { center, maxDim, size } = getModelBounds(object);
-  const freeW = 1 - leftFrac - rightFrac;
-  const freeH = 1 - topFrac - bottomFrac;
-  // Ajuster le zoom pour la zone libre
-  const scaleFactor = 1 / Math.max(0.35, Math.min(freeW, freeH));
-  const dist0 = camera.position.distanceTo(controls.target);
-  const dir = camera.position.clone().sub(controls.target).normalize();
-  camera.position.copy(controls.target).addScaledVector(dir, dist0 * Math.min(scaleFactor, 1.85));
 
-  const dist = camera.position.distanceTo(controls.target);
+  // Ajuster distance pour que le modèle tienne dans freeW x freeH
   const vFov = camera.fov * (Math.PI / 180);
-  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.1));
+  const aspect = Math.max(0.1, camera.aspect);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+  const fitDistV = (size.y * 0.5) / Math.tan(vFov / 2);
+  const fitDistH = (Math.max(size.x, size.z) * 0.5) / Math.tan(hFov / 2);
+  let dist = Math.max(fitDistV, fitDistH, maxDim * 0.4) * 1.15;
+  // Zoom out si la zone libre est plus petite que l'écran
+  const scaleW = W / Math.max(freeW, 1);
+  const scaleH = H / Math.max(freeH, 1);
+  dist *= Math.max(scaleW, scaleH);
+
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  if (dir.lengthSq() < 1e-6) dir.set(0.72, 0.42, 0.72).normalize();
+  controls.target.copy(center);
+  camera.position.copy(center).addScaledVector(dir, dist);
+  camera.updateMatrixWorld(true);
+  controls.update();
+
+  // Décaler pour centrer le sujet dans le rectangle libre (espace NDC → monde)
+  // Centre écran vs centre zone libre
+  const ndcFreeX = ((freeCx / W) * 2 - 1);
+  const ndcFreeY = -((freeCy / H) * 2 - 1); // Y canvas inversé
+  // On veut que le centre du modèle se projette en (ndcFreeX, ndcFreeY)
+  // Approximer par translation caméra dans le plan de vue
   const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
-
-  // Décaler le sujet vers le centre de la zone libre
-  const biasX = (leftFrac - rightFrac) * 0.5;
-  const biasY = (bottomFrac - topFrac) * 0.5;
-  const shiftX = Math.tan(hFov / 2) * dist * biasX * 1.35;
-  const shiftY = Math.tan(vFov / 2) * dist * biasY * 1.35;
+  const shiftX = Math.tan(hFov / 2) * dist * ndcFreeX;
+  const shiftY = Math.tan(vFov / 2) * dist * ndcFreeY;
   camera.position.addScaledVector(right, shiftX);
   controls.target.addScaledVector(right, shiftX);
   camera.position.addScaledVector(up, shiftY);
   controls.target.addScaledVector(up, shiftY);
-
   controls.update();
+
   setStatus(currentLang === 'en' ? 'Framed to visible area.' : 'Cadré sur la zone visible.');
 }
 
-function doFrameVisible() {
+function doFrameVisiblefunction doFrameVisible() {
   if (currentModel) {
     // s'assurer du layout panneau avant mesure
     layoutFloatingWindows();
@@ -2312,9 +2330,12 @@ function refreshMaterialSelect(preserveLabel = true) {
   const btnLabel = document.getElementById('mat-select-btn-label');
   const btnSw = document.getElementById('mat-select-btn-swatch');
   if (!sel) return;
-  const prevBase = preserveLabel && sel.selectedOptions[0]
-    ? (sel.selectedOptions[0].dataset.base || sel.selectedOptions[0].textContent)
-    : null;
+  let prevBase = null;
+  if (preserveLabel) {
+    const cur = getSelectedMaterialEntry();
+    if (cur) prevBase = cur.baseLabel || cur.label;
+    else if (sel.selectedOptions[0]) prevBase = sel.selectedOptions[0].dataset.base || sel.selectedOptions[0].textContent;
+  }
   collectMaterials();
   sel.innerHTML = '';
   if (list) list.innerHTML = '';
@@ -2322,22 +2343,28 @@ function refreshMaterialSelect(preserveLabel = true) {
     sel.innerHTML = '<option value="">—</option>';
     if (btnLabel) btnLabel.textContent = currentLang === 'en' ? '— no material —' : '— aucun matériau —';
     if (btnSw) btnSw.style.background = '#666';
+    const hdr = document.getElementById('mat-name-header');
+    if (hdr) hdr.textContent = '';
     return;
   }
   materialEntries.forEach((e, i) => {
     const hex = e.material?.color ? ('#' + e.material.color.getHexString()) : '#888888';
+    const label = e.listLabel || e.label || ('Mat ' + (i + 1));
     const opt = document.createElement('option');
     opt.value = String(i);
-    opt.textContent = e.listLabel || e.label;
-    opt.dataset.base = e.baseLabel;
+    opt.textContent = label;
+    opt.dataset.base = e.baseLabel || e.label || '';
     opt.dataset.color = hex;
     sel.appendChild(opt);
     if (list) {
       const li = document.createElement('li');
       li.setAttribute('role', 'option');
       li.dataset.value = String(i);
-      li.innerHTML = `<span class="mat-opt-label">${e.listLabel || e.label}</span><span class="mat-opt-swatch" style="background:${hex}"></span>`;
+      li.innerHTML = `<span class="mat-opt-label"></span><span class="mat-opt-swatch"></span>`;
+      li.querySelector('.mat-opt-label').textContent = label;
+      li.querySelector('.mat-opt-swatch').style.background = hex;
       li.addEventListener('click', (ev) => {
+        ev.preventDefault();
         ev.stopPropagation();
         selectMaterialIndex(i);
         closeMatSelectList();
@@ -2354,8 +2381,15 @@ function refreshMaterialSelect(preserveLabel = true) {
 }
 
 function selectMaterialIndex(idx) {
+  idx = parseInt(idx, 10);
+  if (isNaN(idx) || idx < 0) idx = 0;
+  if (idx >= materialEntries.length) idx = Math.max(0, materialEntries.length - 1);
   const sel = document.getElementById('mat-select');
-  if (sel) sel.value = String(idx);
+  if (sel) {
+    sel.value = String(idx);
+    // force change event consumers
+    try { sel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+  }
   loadMaterialToUI(idx);
   paintMatSelectSwatch();
   document.querySelectorAll('#mat-select-list li').forEach((li) => {
@@ -2366,11 +2400,13 @@ function selectMaterialIndex(idx) {
 function paintMatSelectSwatch() {
   const entry = getSelectedMaterialEntry();
   const hex = entry?.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
+  const label = entry ? (entry.listLabel || entry.label || entry.baseLabel || '—') : '—';
   const btnSw = document.getElementById('mat-select-btn-swatch');
   const btnLabel = document.getElementById('mat-select-btn-label');
   if (btnSw) { btnSw.style.background = hex; btnSw.title = hex; }
-  if (btnLabel) btnLabel.textContent = entry ? (entry.listLabel || entry.label) : '—';
-  // hide legacy external swatch if any
+  if (btnLabel) btnLabel.textContent = label;
+  const hdr = document.getElementById('mat-name-header');
+  if (hdr) { hdr.textContent = entry ? (entry.label || entry.baseLabel || label) : ''; hdr.title = hdr.textContent; }
   const old = document.getElementById('mat-select-swatch');
   if (old) old.style.display = 'none';
 }
