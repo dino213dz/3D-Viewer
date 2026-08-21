@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.2';
+const APP_VERSION = '2.2.3';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -995,81 +995,107 @@ function layoutFloatingWindows() {
  */
 function fitCameraToVisibleArea(object) {
   if (!object) return;
-  if (typeof layoutFloatingWindows === 'function') layoutFloatingWindows();
+  if (typeof layoutFloatingWindows === 'function') {
+    try { layoutFloatingWindows(); } catch (_) {}
+  }
 
-  // Rectangle libre de l'écran (sans panneau / fenêtres flottantes)
-  const W = window.innerWidth || 1;
-  const H = window.innerHeight || 1;
+  const W = Math.max(1, window.innerWidth);
+  const H = Math.max(1, window.innerHeight);
   let free = { left: 0, top: 0, right: W, bottom: H };
 
-  const punch = (el) => {
-    if (!el || el.classList.contains('hidden') || el.classList.contains('hidden-ui')) return;
-    if (el.offsetParent === null && getComputedStyle(el).display === 'none') return;
+  const occlude = (el) => {
+    if (!el) return;
+    if (el.classList?.contains('hidden') || el.classList?.contains('hidden-ui')) return;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
     const r = el.getBoundingClientRect();
-    if (r.width < 48 || r.height < 48) return;
-    // Si l'élément occupe un côté, réduire le rectangle libre
-    const coverL = r.left <= 8 && r.right < W * 0.75;
-    const coverR = r.right >= W - 8 && r.left > W * 0.25;
-    const coverT = r.top <= 48 && r.bottom < H * 0.75;
-    const coverB = r.bottom >= H - 28 && r.top > H * 0.25;
-    if (coverL) free.left = Math.max(free.left, r.right);
-    if (coverR) free.right = Math.min(free.right, r.left);
-    if (coverT) free.top = Math.max(free.top, r.bottom);
-    if (coverB) free.bottom = Math.min(free.bottom, r.top);
-  };
-  punch(document.getElementById('side-panel'));
-  punch(document.getElementById('load-window'));
-  punch(document.getElementById('menubar'));
-  punch(document.getElementById('statusbar'));
+    if (r.width < 40 || r.height < 40) return;
+    // Réduire le rectangle libre selon le côté le plus occupé
+    const overlapX = Math.min(r.right, W) - Math.max(r.left, 0);
+    const overlapY = Math.min(r.bottom, H) - Math.max(r.top, 0);
+    if (overlapX <= 0 || overlapY <= 0) return;
+    const area = overlapX * overlapY;
+    if (area < W * H * 0.04) return; // ignorer petits widgets
 
-  // Fallback si rectangle invalide
-  if (free.right - free.left < W * 0.25) { free.left = 0; free.right = W; }
-  if (free.bottom - free.top < H * 0.25) { free.top = 40; free.bottom = H - 24; }
+    // Panneau bas / haut / gauche / droite
+    const fromLeft = r.left <= 12;
+    const fromRight = r.right >= W - 12;
+    const fromTop = r.top <= 56;
+    const fromBottom = r.bottom >= H - 24;
+
+    if (fromBottom && r.height < H * 0.85) {
+      free.bottom = Math.min(free.bottom, r.top);
+    } else if (fromTop && r.height < H * 0.5) {
+      free.top = Math.max(free.top, r.bottom);
+    }
+    if (fromLeft && r.width < W * 0.75) {
+      free.left = Math.max(free.left, r.right);
+    } else if (fromRight && r.width < W * 0.75) {
+      free.right = Math.min(free.right, r.left);
+    } else if (!fromBottom && !fromTop) {
+      // flottant : choisir le côté qui libère le plus d'espace
+      const leftSpace = r.left;
+      const rightSpace = W - r.right;
+      if (leftSpace >= rightSpace && leftSpace > W * 0.25) free.right = Math.min(free.right, r.left);
+      else if (rightSpace > W * 0.25) free.left = Math.max(free.left, r.right);
+    }
+  };
+
+  occlude(document.getElementById('side-panel'));
+  occlude(document.getElementById('load-window'));
+  occlude(document.getElementById('menubar'));
+  occlude(document.getElementById('statusbar'));
+
+  // Sécurité rectangle
+  if (free.right - free.left < W * 0.22) { free.left = 0; free.right = W; }
+  if (free.bottom - free.top < H * 0.22) { free.top = 44; free.bottom = H - 22; }
 
   const freeW = free.right - free.left;
   const freeH = free.bottom - free.top;
-  const freeCx = (free.left + free.right) / 2;
-  const freeCy = (free.top + free.bottom) / 2;
+  const freeCx = (free.left + free.right) * 0.5;
+  const freeCy = (free.top + free.bottom) * 0.5;
 
-  // Cadre de base
+  // 1) Cadre classique
   fitCameraToObject(object);
   camera.updateMatrixWorld(true);
+  controls.update();
 
   const { center, maxDim, size } = getModelBounds(object);
-
-  // Ajuster distance pour que le modèle tienne dans freeW x freeH
   const vFov = camera.fov * (Math.PI / 180);
-  const aspect = Math.max(0.1, camera.aspect);
+  const aspect = Math.max(0.05, camera.aspect);
   const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-  const fitDistV = (size.y * 0.5) / Math.tan(vFov / 2);
-  const fitDistH = (Math.max(size.x, size.z) * 0.5) / Math.tan(hFov / 2);
-  let dist = Math.max(fitDistV, fitDistH, maxDim * 0.4) * 1.15;
-  // Zoom out si la zone libre est plus petite que l'écran
-  const scaleW = W / Math.max(freeW, 1);
-  const scaleH = H / Math.max(freeH, 1);
-  dist *= Math.max(scaleW, scaleH);
 
-  const dir = camera.position.clone().sub(controls.target).normalize();
-  if (dir.lengthSq() < 1e-6) dir.set(0.72, 0.42, 0.72).normalize();
+  // 2) Zoom pour tenir dans la zone libre (pas tout l'écran)
+  const margin = 1.18;
+  const distV = (size.y * 0.5 * margin) / Math.tan(vFov / 2);
+  const distH = (Math.max(size.x, size.z) * 0.5 * margin) / Math.tan(hFov / 2);
+  let dist = Math.max(distV, distH, maxDim * 0.35);
+  dist *= Math.max(W / Math.max(freeW, 1), H / Math.max(freeH, 1));
+
+  let dir = camera.position.clone().sub(controls.target);
+  if (dir.lengthSq() < 1e-8) dir.set(0.72, 0.42, 0.72);
+  dir.normalize();
   controls.target.copy(center);
   camera.position.copy(center).addScaledVector(dir, dist);
   camera.updateMatrixWorld(true);
   controls.update();
 
-  // Décaler pour centrer le sujet dans le rectangle libre (espace NDC → monde)
-  // Centre écran vs centre zone libre
-  const ndcFreeX = ((freeCx / W) * 2 - 1);
-  const ndcFreeY = -((freeCy / H) * 2 - 1); // Y canvas inversé
-  // On veut que le centre du modèle se projette en (ndcFreeX, ndcFreeY)
-  // Approximer par translation caméra dans le plan de vue
+  // 3) Pan pour que le centre du modèle se projette au centre de la zone libre
+  const projected = center.clone().project(camera);
+  const wantX = (freeCx / W) * 2 - 1;
+  const wantY = -((freeCy / H) * 2 - 1);
+  const dx = wantX - projected.x;
+  const dy = wantY - projected.y;
+
   const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
-  const shiftX = Math.tan(hFov / 2) * dist * ndcFreeX;
-  const shiftY = Math.tan(vFov / 2) * dist * ndcFreeY;
-  camera.position.addScaledVector(right, shiftX);
-  controls.target.addScaledVector(right, shiftX);
-  camera.position.addScaledVector(up, shiftY);
-  controls.target.addScaledVector(up, shiftY);
+  // Déplacer caméra+cible à l'inverse du décalage NDC pour amener l'objet
+  const shiftX = dx * Math.tan(hFov / 2) * dist;
+  const shiftY = dy * Math.tan(vFov / 2) * dist;
+  camera.position.addScaledVector(right, -shiftX);
+  controls.target.addScaledVector(right, -shiftX);
+  camera.position.addScaledVector(up, -shiftY);
+  controls.target.addScaledVector(up, -shiftY);
   controls.update();
 
   setStatus(currentLang === 'en' ? 'Framed to visible area.' : 'Cadré sur la zone visible.');
@@ -2383,32 +2409,55 @@ function refreshMaterialSelect(preserveLabel = true) {
 function selectMaterialIndex(idx) {
   idx = parseInt(idx, 10);
   if (isNaN(idx) || idx < 0) idx = 0;
-  if (idx >= materialEntries.length) idx = Math.max(0, materialEntries.length - 1);
+  if (materialEntries.length && idx >= materialEntries.length) idx = materialEntries.length - 1;
   const sel = document.getElementById('mat-select');
-  if (sel) {
-    sel.value = String(idx);
-    // force change event consumers
-    try { sel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
-  }
+  if (sel) sel.value = String(idx);
+  const entry = materialEntries[idx] || null;
   loadMaterialToUI(idx);
-  paintMatSelectSwatch();
+  // Mise à jour explicite du bouton + header (source de vérité = entry)
+  const hex = entry?.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
+  const listLabel = entry ? (entry.listLabel || entry.label || entry.baseLabel || '—') : '—';
+  const plainLabel = entry ? (entry.label || entry.baseLabel || listLabel) : '—';
+  const btnSw = document.getElementById('mat-select-btn-swatch');
+  const btnLabel = document.getElementById('mat-select-btn-label');
+  if (btnSw) { btnSw.style.background = hex; btnSw.title = hex; }
+  if (btnLabel) btnLabel.textContent = listLabel;
+  const hdr = document.getElementById('mat-name-header');
+  if (hdr) { hdr.textContent = plainLabel; hdr.title = plainLabel; }
   document.querySelectorAll('#mat-select-list li').forEach((li) => {
-    li.classList.toggle('selected', li.dataset.value === String(idx));
+    const on = li.dataset.value === String(idx);
+    li.classList.toggle('selected', on);
+    if (on && entry) {
+      const sw = li.querySelector('.mat-opt-swatch');
+      const lb = li.querySelector('.mat-opt-label');
+      if (sw) sw.style.background = hex;
+      if (lb) lb.textContent = listLabel;
+    }
   });
+  setStatusExtra((currentLang === 'en' ? 'Material: ' : 'Matériau : ') + plainLabel);
 }
 
 function paintMatSelectSwatch() {
   const entry = getSelectedMaterialEntry();
-  const hex = entry?.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
-  const label = entry ? (entry.listLabel || entry.label || entry.baseLabel || '—') : '—';
-  const btnSw = document.getElementById('mat-select-btn-swatch');
-  const btnLabel = document.getElementById('mat-select-btn-label');
-  if (btnSw) { btnSw.style.background = hex; btnSw.title = hex; }
-  if (btnLabel) btnLabel.textContent = label;
-  const hdr = document.getElementById('mat-name-header');
-  if (hdr) { hdr.textContent = entry ? (entry.label || entry.baseLabel || label) : ''; hdr.title = hdr.textContent; }
-  const old = document.getElementById('mat-select-swatch');
-  if (old) old.style.display = 'none';
+  if (!entry) {
+    const btnSw = document.getElementById('mat-select-btn-swatch');
+    const btnLabel = document.getElementById('mat-select-btn-label');
+    if (btnSw) btnSw.style.background = '#666';
+    if (btnLabel) btnLabel.textContent = '—';
+    return;
+  }
+  const idx = materialEntries.indexOf(entry);
+  if (idx >= 0) {
+    // Réutilise la même logique d'affichage
+    const hex = entry.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
+    const listLabel = entry.listLabel || entry.label || entry.baseLabel || '—';
+    const btnSw = document.getElementById('mat-select-btn-swatch');
+    const btnLabel = document.getElementById('mat-select-btn-label');
+    if (btnSw) { btnSw.style.background = hex; btnSw.title = hex; }
+    if (btnLabel) btnLabel.textContent = listLabel;
+    const hdr = document.getElementById('mat-name-header');
+    if (hdr) { hdr.textContent = entry.label || entry.baseLabel || listLabel; }
+  }
 }
 
 function closeMatSelectList() {
@@ -2692,12 +2741,8 @@ function onCanvasPointerClick(e) {
   setStatus('Matériau : ' + name);
 
   if (entry) {
-    const sel = document.getElementById('mat-select');
     const idx = materialEntries.indexOf(entry);
-    if (sel && idx >= 0) {
-      sel.value = String(idx);
-      loadMaterialToUI(idx);
-    }
+    if (idx >= 0) selectMaterialIndex(idx);
   }
 }
 
@@ -3521,16 +3566,18 @@ document.getElementById('titlebar-apply-mat')?.addEventListener('click', (e) => 
   applyMaterialsFromUI(false);
 });
 
-// Réduire/déplier groupes matériaux
-document.querySelectorAll('.mat-group-toggle').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const group = btn.closest('.mat-group');
-    if (!group) return;
-    const collapsed = group.classList.toggle('collapsed');
-    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    const chev = btn.querySelector('.mat-group-chevron');
-    if (chev) chev.textContent = collapsed ? '+' : '−';
-  });
+// Réduire/déplier groupes matériaux (− à droite / + pour rouvrir)
+document.getElementById('sec-mats')?.addEventListener('click', (e) => {
+  const btn = e.target.closest?.('.mat-group-toggle');
+  if (!btn || !document.getElementById('sec-mats').contains(btn)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const group = btn.closest('.mat-group');
+  if (!group) return;
+  const collapsed = group.classList.toggle('collapsed');
+  btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  const chev = btn.querySelector('.mat-group-chevron');
+  if (chev) chev.textContent = collapsed ? '+' : '−';
 });
 
 // Afficher bouton Appliquer titre uniquement sur section matériaux

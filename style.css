@@ -2156,3 +2156,47 @@ body.theme-light .mat-select-list li.selected {
 body.theme-light .mat-group-chevron {
   border-color: rgba(0,0,0,0.25);
 }
+
+/* 2.2.3 mat groups */
+.mat-group-title.mat-group-toggle {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 28px !important;
+  padding: 6px 4px !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+}
+.mat-group-label {
+  flex: 1 1 auto !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  font-size: 11px !important;
+  opacity: 0.9;
+}
+.mat-group-chevron {
+  flex: 0 0 auto !important;
+  margin-left: 8px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  user-select: none !important;
+}
+body.theme-light .mat-group-chevron {
+  border-color: rgba(0,0,0,0.3) !important;
+  color: #000 !important;
+}
+.mat-group.collapsed > :not(.mat-group-toggle) {
+  display: none !important;
+}

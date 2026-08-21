@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 22:10 CEST  
+**Dernière mise à jour :** 21 août 2026, 22:21 CEST  
 
-**Version :** 2.2.2
+**Version :** 2.2.3
 
 ---
 
@@ -44,6 +44,11 @@
 ---
 
 ## Historique des versions
+
+### 2.2.3 — 21 août 2026, 22:21 CEST
+- Liste matériaux : le nom et la pastille se mettent à jour à chaque sélection (clic liste / clic 3D)
+- Sections matériaux : bouton − / + bien visible à droite du titre
+- Cadrer zone visible : centre et zoom dans la zone libre (hors panneaux)
 
 ### 2.2.2 — 21 août 2026, 22:10 CEST
 - Fix critique : syntaxe `doFrameVisible` cassée qui bloquait tout le JavaScript
