@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.1.5';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -527,7 +527,28 @@ function hideLoader() {
 const fbxLoader = new FBXLoader();
 const gltfLoader = new GLTFLoader();
 
+function disposeMaterialTextures(mat) {
+  if (!mat) return;
+  const maps = ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','bumpMap','displacementMap','alphaMap','envMap'];
+  maps.forEach((k) => {
+    if (mat[k] && mat[k].dispose) {
+      try { mat[k].dispose(); } catch (_) {}
+      mat[k] = null;
+    }
+  });
+  if (mat.dispose) try { mat.dispose(); } catch (_) {}
+}
 function clearModel() {
+  if (currentModel) {
+    currentModel.traverse((ch) => {
+      if (ch.isMesh) {
+        const mats = Array.isArray(ch.material) ? ch.material : [ch.material];
+        mats.forEach(disposeMaterialTextures);
+        if (ch.geometry?.dispose) ch.geometry.dispose();
+      }
+    });
+  }
+
   originalMaterialsSnapshot = null;
   if (currentModel) {
     scene.remove(currentModel);
@@ -1295,7 +1316,7 @@ function closeLoadWindow() {
   const w = document.getElementById('load-window');
   if (w) w.classList.add('hidden');
 }
-document.getElementById('load-close-x')?.addEventListener('click', closeLoadWindow);
+document.getElementById('load-close')?.addEventListener('click', closeLoadWindow);
 document.getElementById('load-browse-btn')?.addEventListener('click', () => fileInput?.click());
 
 const loadDrop = document.getElementById('load-drop-zone');
@@ -2501,25 +2522,10 @@ function onCanvasPointerClick(e) {
   pickPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   pickRaycaster.setFromCamera(pickPointer, camera);
-  // Sol
-  const groundHits = [];
-  if (grid.visible) groundHits.push(...pickRaycaster.intersectObject(grid, true));
-  if (groundPlane.visible) groundHits.push(...pickRaycaster.intersectObject(groundPlane, true));
-  if (groundHits.length && (!currentModel || !pickRaycaster.intersectObject(currentModel, true).length || groundHits[0].distance < (pickRaycaster.intersectObject(currentModel, true)[0]?.distance ?? Infinity))) {
-    // prefer model if closer; only open ground if primarily ground
-  }
-  if (!currentModel) {
-    if (groundHits.length) {
-      showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
-      return;
-    }
-    return;
-  }
+  // Sol : ne plus ouvrir au simple clic (double-clic uniquement)
+  if (!currentModel) return;
   const hits = pickRaycaster.intersectObject(currentModel, true);
-  if (!hits.length) {
-    if (groundHits.length) showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
-    return;
-  }
+  if (!hits.length) return;
   const hit = hits[0];
   const mesh = hit.object;
   if (!mesh.isMesh || !mesh.material) return;
@@ -2572,17 +2578,61 @@ canvas.addEventListener('pointerup', (e) => {
   onCanvasPointerClick(e);
 });
 canvas.addEventListener('dblclick', (e) => {
-  if (!currentModel) return;
+  if (e.target !== canvas) return;
   const rect = canvas.getBoundingClientRect();
   pickPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   pickRaycaster.setFromCamera(pickPointer, camera);
-  const hits = pickRaycaster.intersectObject(currentModel, true);
-  if (!hits.length) return;
-  const mesh = hits[0].object;
+
+  // 1) Double-clic sur une lumière (helper / marker)
+  let bestLight = null;
+  let bestDist = Infinity;
+  lights.forEach((entry) => {
+    if (!entry || entry.type === 'AmbientLight') return;
+    const objs = [];
+    if (entry.helper) objs.push(entry.helper);
+    if (entry.helper?._marker) objs.push(entry.helper._marker);
+    objs.forEach((o) => {
+      const hs = pickRaycaster.intersectObject(o, true);
+      if (hs.length && hs[0].distance < bestDist) {
+        bestDist = hs[0].distance;
+        bestLight = entry;
+      }
+    });
+    // also test light position with a small sphere ray approx via marker
+  });
+  if (bestLight) {
+    showSection('sec-lights', currentLang === 'en' ? 'Lights' : 'Lumières');
+    document.querySelectorAll('.light-card').forEach((c) => c.classList.remove('light-focused'));
+    if (bestLight.card) {
+      bestLight.card.classList.add('light-focused');
+      bestLight.card.classList.remove('collapsed');
+      const body = bestLight.card.querySelector('.light-card-body');
+      if (body) body.style.display = '';
+      const col = bestLight.card.querySelector('.btn-collapse');
+      if (col) col.textContent = '−';
+      bestLight.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    setStatus((currentLang === 'en' ? 'Light: ' : 'Lumière : ') + (bestLight.name || bestLight.type));
+    return;
+  }
+
+  // 2) Double-clic sol
+  const groundHits = [];
+  if (grid.visible) groundHits.push(...pickRaycaster.intersectObject(grid, true));
+  if (groundPlane.visible) groundHits.push(...pickRaycaster.intersectObject(groundPlane, true));
+  const modelHits = currentModel ? pickRaycaster.intersectObject(currentModel, true) : [];
+  if (groundHits.length && (!modelHits.length || groundHits[0].distance <= modelHits[0].distance)) {
+    showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
+    return;
+  }
+
+  // 3) Double-clic mesh → cadrer
+  if (!modelHits.length) return;
+  const mesh = modelHits[0].object;
   if (!mesh) return;
   fitCameraToObject(mesh);
-  setStatus('Élément cadré : ' + (mesh.name || 'mesh'));
+  setStatus((currentLang === 'en' ? 'Framed: ' : 'Élément cadré : ') + (mesh.name || 'mesh'));
 });
 
 
@@ -2964,7 +3014,7 @@ const UI_I18N = {
     ground: 'Sol',
     file_props: 'Propriétés du fichier',
     load_file: 'Charger un fichier',
-    about: 'À propos — 3D Viewer',
+    about: 'À propos de 3D Viewer',
     help: 'Aide — 3D Viewer',
     selection: 'Sélection',
     colors: 'Couleurs',
@@ -2984,6 +3034,7 @@ const UI_I18N = {
     desc: '3D Viewer permet de visualiser vos fichiers 3D.',
     updated_date: '21 août 2026',
     created_date: '19 août 2026',
+    update_available: 'MAJ disponible !',
   },
   en: {
     ready: 'Ready',
@@ -2993,8 +3044,9 @@ const UI_I18N = {
     ground: 'Ground',
     file_props: 'File properties',
     load_file: 'Open file',
-    about: 'About — 3D Viewer',
+    about: 'About 3D Viewer',
     help: 'Help — 3D Viewer',
+    update_available: 'Update available!',
     selection: 'Selection',
     colors: 'Colors',
     color: 'Color',
@@ -3013,6 +3065,7 @@ const UI_I18N = {
     desc: '3D Viewer lets you view your 3D files.',
     updated_date: 'August 21, 2026',
     created_date: 'August 19, 2026',
+    update_available: 'Update available!',
   },
 };
 
@@ -3059,10 +3112,13 @@ function applyUITranslations() {
   const opt = document.querySelector('#mat-select option[value=""]');
   if (opt) opt.textContent = t.no_model_opt;
   // About
-  const aboutH = document.querySelector('#about-modal h2');
+  const aboutH = document.getElementById('about-title') || document.querySelector('#about-modal h2');
   if (aboutH) aboutH.textContent = t.about;
-  const helpH = document.querySelector('#help-modal h2');
+  const helpH = document.getElementById('help-title') || document.querySelector('#help-modal h2');
   if (helpH) helpH.textContent = t.help;
+  const badge = document.getElementById('about-update-badge');
+  if (badge && !badge.classList.contains('hidden')) badge.textContent = t.update_available || badge.textContent;
+
   document.querySelectorAll('.about-desc').forEach((el) => { el.textContent = t.desc; });
   const aboutUpd = document.getElementById('about-updated');
   if (aboutUpd) aboutUpd.textContent = t.updated_date;
@@ -3246,13 +3302,49 @@ canvas.addEventListener('pointerup', (e) => {
     } else if (act === 'wireframe') {
       toggleWireframe();
       updateDynamicMenuLabels();
-    } else if (act === 'ground') {
-      const order = ['grid', 'plane', 'none'];
-      const i = order.indexOf(groundMode);
-      setGroundMode(order[(i + 1) % order.length]);
     } else if (act === 'helpers') {
       setLightHelpersVisible(!lightHelpersVisible);
     }
   });
 })();
 updateDynamicMenuLabels?.();
+
+// ===== Vérification version GitHub (README main) =====
+function parseVersion(str) {
+  const m = String(str || '').match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return null;
+  return [parseInt(m[1],10), parseInt(m[2],10), parseInt(m[3],10)];
+}
+function isNewer(remote, local) {
+  if (!remote || !local) return false;
+  for (let i = 0; i < 3; i++) {
+    if (remote[i] > local[i]) return true;
+    if (remote[i] < local[i]) return false;
+  }
+  return false;
+}
+async function checkGitHubVersion() {
+  const badge = document.getElementById('about-update-badge');
+  const urls = [
+    'https://raw.githubusercontent.com/dino213dz/3D-Viewer/main/README.md',
+    'https://cdn.jsdelivr.net/gh/dino213dz/3D-Viewer@main/README.md',
+  ];
+  let text = '';
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (r.ok) { text = await r.text(); break; }
+    } catch (_) {}
+  }
+  if (!text) return;
+  const line = text.split('\n').find((l) => /^\*\*Version\s*:\*\*/i.test(l.trim()) || /^Version\s*:/i.test(l.trim()));
+  if (!line) return;
+  const remote = parseVersion(line);
+  const local = parseVersion(APP_VERSION);
+  if (isNewer(remote, local) && badge) {
+    badge.classList.remove('hidden');
+    badge.textContent = (currentLang === 'en') ? 'Update available!' : 'MAJ disponible !';
+    badge.href = 'https://github.com/dino213dz/3D-Viewer';
+  }
+}
+queueMicrotask(() => { checkGitHubVersion().catch(() => {}); });

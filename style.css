@@ -1444,3 +1444,81 @@ body.theme-light .statusbar {
 /* room for statusbar */
 #app { padding-bottom: 0; }
 .side-panel { max-height: calc(100vh - var(--menu-h, 40px) - 32px); }
+
+/* 2.1.5 */
+.side-titlebar, .floating-titlebar {
+  padding: 6px 12px !important;
+  min-height: 30px !important;
+}
+.traffic-lights-right { right: 10px; }
+/* Monochrome window buttons */
+.tl {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 3px !important;
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  opacity: 0.75;
+  position: relative;
+}
+.tl:hover { opacity: 1; background: rgba(255,255,255,0.12) !important; }
+.tl-close::before, .tl-close::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 8px; height: 1.5px;
+  background: currentColor;
+}
+.tl-close::before { transform: translate(-50%,-50%) rotate(45deg); }
+.tl-close::after { transform: translate(-50%,-50%) rotate(-45deg); }
+.tl-min::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 8px; height: 1.5px;
+  background: currentColor;
+  transform: translate(-50%,-50%);
+}
+.tl-max::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 7px; height: 7px;
+  border: 1.5px solid currentColor;
+  transform: translate(-50%,-50%);
+  box-sizing: border-box;
+}
+body.theme-light .tl:hover { background: rgba(0,0,0,0.1) !important; }
+
+.lang-btn { opacity: 0.7; }
+.lang-btn.active {
+  opacity: 1;
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+.lang-btn:not(.active) {
+  color: inherit !important;
+  font-weight: 400;
+}
+
+.light-card.light-focused {
+  outline: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.update-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #F54927;
+  color: #fff !important;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none !important;
+  animation: pulseUpd 1.6s ease-in-out infinite;
+}
+.update-badge.hidden { display: none !important; }
+@keyframes pulseUpd {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

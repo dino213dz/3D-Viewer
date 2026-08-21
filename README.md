@@ -13,8 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 17:20 CEST
-**Version :** 2.1.4
+**Dernière mise à jour :** 21 août 2026, 18:06 CEST  
+
+**Version :** 2.1.5
 
 ---
 
@@ -31,179 +32,148 @@
 
 ### Autres
 - Double-clic sur un élément pour le cadrer
+- Double-clic sol → éditeur de sol ; double-clic lumière → panneau lumière
 - Menu contextuel (clic droit)
 - Gizmo d’axes (X rouge, Y vert, Z bleu)
 - Sol : quadrillage, surface plate ou aucun (éditable)
 - Affichage clair / sombre
-- Langues : Français, English
+- Langues : Français, English (défaut English, mémorisée)
 - Rotation des lumières, cônes masquables, lumières renommables et repliables
+- Notification « MAJ disponible ! » si une version plus récente est sur GitHub
 
 ---
 
 ## Historique des versions
 
+### 2.1.5 — 21 août 2026, 18:06 CEST
+- Fenêtre Ouvrir : un seul bouton fermer, aligné à droite
+- Double-clic lumière → panneau lumières (focus)
+- Sol : édition uniquement au double-clic (plus au simple clic ni clic droit)
+- Langue active seule en surbrillance
+- Boutons fenêtre monochromes ; barre de titre plus fine
+- Titre À propos : « About 3D Viewer » / « À propos de 3D Viewer »
+- Vérification version GitHub (README) + badge MAJ disponible
+- Aide : contrôles souris/tactile détaillés (clic droit + glisser = pan)
+- Libération des textures à l’effacement / nouveau fichier
+- README : ligne Version isolée + historique complet
+
 ### 2.1.4 — 21 août 2026, 17:20 CEST
-- Langue par défaut : **English** ; préférence sauvegardée (localStorage)
-- Fix critique : crash TDZ sur `currentLang` qui empêchait le chargement de `modele.glb`
-- Chargement du modèle par défaut rétabli (URL absolue + microtask)
+- Langue par défaut : English ; préférence sauvegardée (localStorage)
+- Fix critique : crash TDZ sur currentLang qui empêchait le chargement de modele.glb
+- Chargement du modèle par défaut rétabli
 
 ### 2.1.3 — 21 août 2026, 17:08 CEST
-- Barre d’état en bas (messages + info matériau) ; plus de statut dans le menu
-- Boutons fenêtre à droite dans l’ordre − + × ; marges barre de titre équilibrées
-- Traduction EN étendue (fenêtres, panneaux, boutons, à propos)
-- Marges alignées pour Aide / À propos / Langues dans Fichier
-- Date de mise à jour À propos
+- Barre d’état en bas (messages + info matériau)
+- Boutons fenêtre − + × à droite ; marges barre de titre
+- Traduction EN étendue
+- Marges Aide / À propos / Langues
 
 ### 2.1.2 — 21 août 2026, 16:37 CEST
 - Correction menu mobile : se ferme au clic sur un lien ou en dehors
 
 ### 2.1.1 — 21 août 2026, 16:25 CEST
-- Traduction réelle FR/EN de l’interface
-- Sous-menu Sol transparent + surbrillance du menu parent conservée
-- Labels dynamiques Afficher / Masquer (gizmo, cônes, thème)
-- Menu contextuel clic droit (cadrage, gizmo, wireframe, sol, cônes)
-- Édition du sol (clic sur le sol + menu Vue)
-- Matériaux : nom sans numéro en en-tête, numéro dans la liste + carré de couleur
-- Thème clair style Windows 3.11, accent `#F54927`, icônes et séparateurs noirs
-- Boutons de fenêtre à droite, barre affinée, titre centré
-- Icône unique pour les cônes de lumière
-- Clic sur « 3D Viewer » → À propos
+- Traduction FR/EN interface
+- Sous-menu Sol transparent
+- Labels dynamiques Afficher / Masquer
+- Menu contextuel clic droit
+- Édition du sol ; swatch matériau
+- Thème clair Windows 3.11, accent #F54927
 
 ### 2.1.0 — 21 août 2026, 15:30 CEST
-- Textures GLB : conservation et colorSpace corrects (map, normal, roughness, etc.)
-- Langues FR / EN (Menu → Fichier → Langues)
-- Sous-menus sur une ligne avec troncature « … » + infobulle
-- Fichiers renommés : `modele.glb`, `logo.png`
-- À propos : logo, description, auteurs, liens
-- Propriétés du fichier dans Fichier (+ taille)
-- Aide et À propos sous Fichier ; fenêtre Aide dédiée
-- Gizmo avec labels X/Y/Z
-- Suppression « Appliquer à tout le modèle » du menu Éditer
-- Lumières : réduire, renommer, masquer les cônes
-- « 3D Viewer » à droite de la barre ; séparateurs menu / icônes
-- Fenêtre ouverture : déplaçable, un seul bouton fermer
-- Affichage clair (Vue)
-- Recharger le modèle par défaut
-- « Panneau flottant » (ex. panneau latéral)
-- Nom matériau tronqué + en-tête
-- Sol : quadrillage / surface / aucun
+- Textures GLB / colorSpace
+- Langues FR/EN ; modele.glb ; logo.png
+- Aide, propriétés fichier, gizmo labels X/Y/Z
+- Lumières réduisibles / renommables
+- Sol quadrillage / surface / aucun
 - Double-clic cadrage élément
-- Ascenseurs sombres ; cadres dans le panneau matériaux
-- Boutons fenêtre espacés ; barre de titre affinée
 
 ### 2.0.3 — 20 août 2026
-- Gizmo dans menu Vue (plus dans Éditer)
-- Sélecteurs de couleur synchronisés avec la couleur courante
+- Gizmo dans menu Vue
+- Sélecteurs de couleur synchronisés
 
 ### 2.0.2 — 20 août 2026
 - Réinitialiser couleur du ciel
 - Afficher / masquer les gizmo
-- Matériaux regroupés par nom (plus de doublons)
+- Matériaux regroupés par nom
 
 ### 2.0.1 — 20 août 2026
-- Clic barre de menu : ferme le sous-menu ouvert
+- Fermeture sous-menus au clic barre
 - Rotation des lumières X/Y/Z
-- Gizmo d’axes (orientation type Blender)
-- Couleur du ciel (arrière-plan) dans Éditer
+- Gizmo d’axes ; couleur du ciel
 
 ### 2.0.0 — 20 août 2026 *(majeure)*
-- Icônes barre actives : bleu accent (`#6761FF`)
-- Matériaux : ordre alphabétique + numérotation `N-Nom`
-- Clic 3D → bulle nom du matériau + sélection dans l’éditeur
-- Logo **dino213dz** dans la fenêtre À propos
+- Accent #6761FF ; matériaux numérotés alphabétiques
+- Clic 3D → bulle matériau ; logo À propos
 
 ### 1.7.9 — 20 août 2026
-- README historique complet
-- Bulles (tooltips) sur les boutons de la barre de menu
-- Liens visités corrigés ; vert réservé aux fenêtres actives
+- README historique ; tooltips barre ; liens visités
 
 ### 1.7.8 — 20 août 2026
-- Boutons barre Matériaux / Lumières : toggle ouvrir/fermer
-- À propos : icônes globe / mail / GitHub monochromes
-- Liens À propos : vert Xbox, survol accent
+- Toggle Matériaux / Lumières ; icônes À propos
 
 ### 1.7.7 — 20 août 2026
-- Lien GitHub dans À propos
-- Raccourcis barre : Matériaux et Lumières
+- Lien GitHub À propos ; raccourcis barre
 
 ### 1.7.6 — 20 août 2026
-- Menu : un seul sous-menu ouvert à la fois (plus de clic + survol simultanés)
+- Un seul sous-menu ouvert à la fois
 
 ### 1.7.5 — 20 août 2026
-- Aide : raccourcis clavier + icône « ? »
-- Accent `#6761FF` ; feux de fenêtre monochromes
-- Vue → Propriétés du fichier
-- Panneau latéral : plus de panneau vide (props par défaut / dernière fenêtre)
+- Aide raccourcis ; accent #6761FF ; propriétés fichier
 
 ### 1.7.4 — 20 août 2026
-- Historique Annuler/Refaire **par fichier** (compteur non hérité entre fichiers)
+- Historique Annuler/Refaire par fichier
 
 ### 1.7.3 — 20 août 2026
-- Correction cadrage zone visible : objet à côté des fenêtres (pas derrière)
+- Cadrage zone visible corrigé
 
 ### 1.7.2 — 20 août 2026
-- Repositionnement des fenêtres paysage (haut-gauche) / portrait (bas)
-- Cadrer zone visible (menu Vue + barre)
+- Repositionnement fenêtres portrait/paysage
+- Cadrer zone visible
 
 ### 1.7.1 — 20 août 2026
-- Fix application matériau (2e modification)
-- Refaire / Redo (menu + barre + Ctrl+Y)
-- Couleurs personnalisées enregistrées + champ hex
+- Fix 2e application matériau ; Redo ; hex couleurs
 
 ### 1.7.0 — 20 août 2026
-- Correction bouton Annuler (menu + barre)
-- Icônes SVG monochromes blanches
-- Bouton barre : recadrer la vue
-- Échelle texture X/Y/Z
-- Menu Vue : suppression de « Recentrer la caméra »
+- Annuler barre ; icônes SVG ; échelle texture X/Y/Z
 
 ### 1.6.9 — 20 août 2026
-- Correction critique : erreur de syntaxe dans `performUndo` (script JS ne se chargeait plus)
+- Fix syntaxe performUndo
 
 ### 1.6.8 — 20 août 2026
-- Menu réordonné : Fichier → Éditer → Vue → Aide → À propos
-- Icônes menu + bouton Annuler à droite de la barre
-- Correction : modif. lumières ne réinitialise plus les matériaux
+- Menu Fichier → Éditer → Vue ; Annuler barre
 
 ### 1.6.7 — 20 août 2026
-- Menu **Éditer** (remplace Paramètres + Matériaux)
-- Historique **Annuler** illimité + Ctrl/Cmd+Z
+- Menu Éditer ; Annuler illimité + Ctrl+Z
 
 ### 1.6.6 — 20 août 2026
-- Transparence des fenêtres / menus à **66 %**
+- Transparence 66 %
 
 ### 1.6.5 — 19–20 août 2026
-- Aucune fenêtre ouverte au démarrage
+- Aucune fenêtre au démarrage
 
 ### 1.6.4 — 19–20 août 2026
-- Fenêtre **Charger un fichier** (glisser-déposer + Parcourir)
-- Transparence glass ~85 %
+- Fenêtre Charger un fichier (drag & drop)
 
 ### 1.6.3 — 19–20 août 2026
 - Réinitialiser matériaux d’origine
 
 ### 1.6.2 — 19–20 août 2026
-- Chargement fichier uniquement via menu Fichier
+- Chargement uniquement via menu Fichier
 
 ### 1.6.1 — 19–20 août 2026
-- Auteur : CHORFA Allaeddine
-- Modèle par défaut **4x4.glb** (puis `modele.glb`)
+- Auteur CHORFA Allaeddine ; modèle par défaut
 
 ### 1.6.0 — 19 août 2026
-- Fenêtres glass flottantes (déplacer, redimensionner, min/max)
-- Menu se ferme au clic sur une action
+- Fenêtres glass flottantes
 
 ### 1.5.x — 19 août 2026
-- Menu responsive, conservation de la sélection matériau
-- Barre de titre Mac (feux + croix)
+- Menu responsive ; sélection matériau conservée
 
 ### 1.4.x – 1.2.x — 19 août 2026
-- Panneau matériaux, auto-scale, menu horizontal macOS
-- Lumières configurables, wireframe, cadrage
-- Support ZIP / FBX / glTF, OrbitControls souris + tactile
+- Matériaux, lumières, wireframe, ZIP/FBX/glTF
 
 ### 1.0 – 1.1 — 19 août 2026
-- Première version du visualiseur 3D web (Car3D Tester → 3D Viewer)
+- Première version (Car3D Tester → 3D Viewer)
 
 ---
 
