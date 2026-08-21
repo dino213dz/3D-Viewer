@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 19:30 CEST  
+**Dernière mise à jour :** 21 août 2026, 21:14 CEST  
 
-**Version :** 2.1.9
+**Version :** 2.2.0
 
 ---
 
@@ -44,6 +44,15 @@
 ---
 
 ## Historique des versions
+
+### 2.2.0 — 21 août 2026, 21:14 CEST
+- Propriétés fichier : nom et taille mis à jour au changement de fichier
+- Matériaux : groupes collapsibles (Couleurs / Propriétés / Texture)
+- Bouton Appliquer rapide (✓) en haut à gauche de la barre de titre matériaux
+- Cadrer l’objet : zoom ajusté pour remplir la fenêtre sans dépasser
+- Aide : fermeture au clic extérieur
+- Barre d’état plus compacte
+- Cadrer zone visible : meilleure prise en charge mobile paysage
 
 ### 2.1.9 — 21 août 2026, 19:30 CEST
 - Options Sol déplacées dans Menu > Éditer

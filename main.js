@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.9';
+const APP_VERSION = '2.2.0';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -672,25 +672,31 @@ function repositionLightsForModel(object) {
 }
 
 function fitCameraToObject(object) {
+  if (!object) return;
   const { size, center, maxDim } = getModelBounds(object);
 
-  const fov = camera.fov * (Math.PI / 180);
-  let distance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-  distance *= 2.4; // marge confortable
+  // Distance pour que l'objet occupe au mieux le viewport sans dépasser
+  const vFov = camera.fov * (Math.PI / 180);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.1));
+  const distV = (size.y * 0.5) / Math.tan(vFov / 2);
+  const distH = (Math.max(size.x, size.z) * 0.5) / Math.tan(hFov / 2);
+  let distance = Math.max(distV, distH, maxDim * 0.5);
+  distance *= 1.12; // petite marge ~12% pour ne pas coller aux bords
 
-  const offset = new THREE.Vector3(distance * 0.75, distance * 0.4, distance * 0.75);
-  camera.position.copy(center).add(offset);
+  // Angle de vue 3/4
+  const dir = new THREE.Vector3(0.72, 0.42, 0.72).normalize();
+  camera.position.copy(center).addScaledVector(dir, distance);
   controls.target.copy(center);
 
-  controls.minDistance = Math.max(0.15, maxDim * 0.12);
-  controls.maxDistance = maxDim * 12;
-  camera.near = Math.max(0.01, maxDim * 0.001);
-  camera.far = Math.max(5000, maxDim * 40);
+  controls.minDistance = Math.max(0.08, maxDim * 0.05);
+  controls.maxDistance = Math.max(maxDim * 20, distance * 8);
+  camera.near = Math.max(0.01, maxDim * 0.0005);
+  camera.far = Math.max(5000, maxDim * 50);
   camera.updateProjectionMatrix();
   controls.update();
 
   // Repositionner les lumières autour de l'objet
-  repositionLightsForModel(object);
+  if (typeof repositionLightsForModel === 'function') repositionLightsForModel(object);
 }
 
 function fixTextureColorSpace(tex, isColorMap = true) {
@@ -783,6 +789,8 @@ function prepareModel(object) {
 function loadModelFromBlob(blob, fileName, displayName) {
   const url = URL.createObjectURL(blob);
   const name = fileName.toLowerCase();
+  if (fileName) currentFileName = displayName || fileName;
+  if (blob && typeof blob.size === 'number' && blob.size > 0) currentFileSize = blob.size;
 
   const onSuccess = (object) => {
     currentModel = prepareModel(object);
@@ -877,6 +885,8 @@ function loadFile(file) {
   // Sauvegarder l'historique du fichier qu'on quitte (session)
   switchHistoryToFile(nextKey);
   currentFileKey = nextKey;
+  currentFileName = file.name;
+  currentFileSize = file.size || 0;
   // Nouveau modèle 3D = nouvelles refs meshes → on repart d'un historique vide
   // (l'ancien historique stocké reste en Map si on veut l'inspecter, mais
   //  on ne le réapplique pas : les meshes de la session précédente sont disposés)
@@ -985,43 +995,66 @@ function layoutFloatingWindows() {
  */
 function fitCameraToVisibleArea(object) {
   if (!object) return;
-  fitCameraToObject(object);
+  // Mesurer le panneau APRÈS layout
+  if (typeof layoutFloatingWindows === 'function') layoutFloatingWindows();
 
   const panel = document.getElementById('side-panel');
-  const panelOpen = panel && !panel.classList.contains('hidden-ui');
-  if (!panelOpen) {
-    setStatus('Objet cadré (plein écran).');
-    return;
+  const panelOpen = panel && !panel.classList.contains('hidden-ui') && panel.offsetParent !== null;
+  const rect = panelOpen ? panel.getBoundingClientRect() : null;
+
+  // Fraction de l'écran masquée par le panneau
+  let leftFrac = 0, rightFrac = 0, topFrac = 0, bottomFrac = 0;
+  if (rect && rect.width > 40 && rect.height > 40) {
+    const W = window.innerWidth || 1;
+    const H = window.innerHeight || 1;
+    // panneau chevauche quelle zone ?
+    if (rect.left < W * 0.35 && rect.right < W * 0.7) {
+      leftFrac = Math.min(0.6, rect.right / W);
+    } else if (rect.right > W * 0.65) {
+      rightFrac = Math.min(0.6, (W - rect.left) / W);
+    }
+    if (rect.top < H * 0.35 && rect.bottom < H * 0.7) {
+      topFrac = Math.min(0.55, rect.bottom / H);
+    } else if (rect.bottom > H * 0.6) {
+      bottomFrac = Math.min(0.6, (H - rect.top) / H);
+    }
+    // mobile paysage : panneau souvent à gauche/plein hauteur
+    if (!isPortraitLayout() && rect.height > H * 0.5) {
+      if (rect.left < W * 0.5) leftFrac = Math.max(leftFrac, Math.min(0.65, rect.right / W));
+      else rightFrac = Math.max(rightFrac, Math.min(0.65, (W - rect.left) / W));
+    }
   }
 
-  const portrait = isPortraitLayout();
+  // Cadre de base dans le viewport utile (réduire distance si besoin)
+  fitCameraToObject(object);
+
+  const { center, maxDim, size } = getModelBounds(object);
+  const freeW = 1 - leftFrac - rightFrac;
+  const freeH = 1 - topFrac - bottomFrac;
+  // Ajuster le zoom pour la zone libre
+  const scaleFactor = 1 / Math.max(0.35, Math.min(freeW, freeH));
+  const dist0 = camera.position.distanceTo(controls.target);
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, dist0 * Math.min(scaleFactor, 1.85));
+
   const dist = camera.position.distanceTo(controls.target);
   const vFov = camera.fov * (Math.PI / 180);
-  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
-
-  // Vecteurs caméra
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.1));
   const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
 
-  if (!portrait) {
-    // panneau à gauche : objet doit apparaître dans la zone libre à DROITE
-    const panelW = Math.min(panel.getBoundingClientRect().width || 320, window.innerWidth * 0.45);
-    const frac = Math.min(0.55, (panelW / window.innerWidth) * 1.15);
-    const shift = Math.tan(hFov / 2) * dist * frac;
-    // translater caméra+cible vers la droite (axe right caméra) → sujet visible à droite
-    camera.position.addScaledVector(right, shift);
-    controls.target.addScaledVector(right, shift);
-  } else {
-    // panneau en bas : objet doit apparaître dans la zone libre en HAUT
-    const panelH = Math.min(panel.getBoundingClientRect().height || 280, window.innerHeight * 0.45);
-    const frac = Math.min(0.55, (panelH / window.innerHeight) * 1.15);
-    const shift = Math.tan(vFov / 2) * dist * frac;
-    // translater vers le bas de l'écran caméra pour que le sujet monte dans le cadre
-    camera.position.addScaledVector(up, -shift);
-    controls.target.addScaledVector(up, -shift);
-  }
+  // Décaler le sujet vers le centre de la zone libre
+  const biasX = (leftFrac - rightFrac) * 0.5;
+  const biasY = (bottomFrac - topFrac) * 0.5;
+  const shiftX = Math.tan(hFov / 2) * dist * biasX * 1.35;
+  const shiftY = Math.tan(vFov / 2) * dist * biasY * 1.35;
+  camera.position.addScaledVector(right, shiftX);
+  controls.target.addScaledVector(right, shiftX);
+  camera.position.addScaledVector(up, shiftY);
+  controls.target.addScaledVector(up, shiftY);
+
   controls.update();
-  setStatus(portrait ? 'Cadré zone visible (haut).' : 'Cadré zone visible (droite).');
+  setStatus(currentLang === 'en' ? 'Framed to visible area.' : 'Cadré sur la zone visible.');
 }
 
 function doFrameVisible() {
@@ -2918,6 +2951,7 @@ function bootDefaultModel() {
   fetch('modele.glb', { method: 'HEAD' }).then((r) => {
     const len = r.headers.get('content-length');
     if (len) currentFileSize = parseInt(len, 10) || 0;
+    if (typeof refreshFileProps === 'function') refreshFileProps();
   }).catch(() => {});
 
   const url = new URL('modele.glb', window.location.href).href;
@@ -2998,6 +3032,10 @@ document.getElementById('menu-help')?.addEventListener('click', () => {
 });
 document.getElementById('help-close')?.addEventListener('click', () => {
   document.getElementById('help-modal')?.classList.add('hidden');
+});
+const helpModal = document.getElementById('help-modal');
+helpModal?.addEventListener('click', (e) => {
+  if (e.target === helpModal) helpModal.classList.add('hidden');
 });
 
 (function makeLoadWindowDraggable() {
@@ -3441,3 +3479,36 @@ async function checkGitHubVersion() {
   else setVersionStatus('ok');
 }
 queueMicrotask(() => { checkGitHubVersion().catch(() => {}); });
+
+document.getElementById('titlebar-apply-mat')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  applyMaterialsFromUI(false);
+});
+
+// Réduire/déplier groupes matériaux
+document.querySelectorAll('.mat-group-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const group = btn.closest('.mat-group');
+    if (!group) return;
+    const collapsed = group.classList.toggle('collapsed');
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const chev = btn.querySelector('.mat-group-chevron');
+    if (chev) chev.textContent = collapsed ? '+' : '−';
+  });
+});
+
+// Afficher bouton Appliquer titre uniquement sur section matériaux
+(function watchMatsApplyBtn() {
+  const btn = document.getElementById('titlebar-apply-mat');
+  const sec = document.getElementById('sec-mats');
+  if (!btn || !sec) return;
+  const sync = () => {
+    const visible = !sec.classList.contains('hidden') && !document.getElementById('side-panel')?.classList.contains('hidden-ui');
+    btn.classList.toggle('hidden', !visible);
+  };
+  const obs = new MutationObserver(sync);
+  obs.observe(sec, { attributes: true, attributeFilter: ['class'] });
+  const panel = document.getElementById('side-panel');
+  if (panel) obs.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  sync();
+})();
