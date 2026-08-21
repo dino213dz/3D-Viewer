@@ -12,10 +12,11 @@
 **Site :** [chorfa.fr](https://chorfa.fr)  
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
+**Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 22:21 CEST  
+**Dernière mise à jour :** 21 août 2026, 23:38 CEST  
 
-**Version :** 2.2.3
+**Version :** 2.2.4
 
 ---
 
@@ -44,6 +45,10 @@
 ---
 
 ## Historique des versions
+
+### 2.2.4 — 21 août 2026, 23:38 CEST
+- Matériaux : boutons − sections / + sections (tout réduire / tout développer)
+- À propos : libellé « MàJ disponible » en rouge si une version plus récente existe
 
 ### 2.2.3 — 21 août 2026, 22:21 CEST
 - Liste matériaux : le nom et la pastille se mettent à jour à chaque sélection (clic liste / clic 3D)

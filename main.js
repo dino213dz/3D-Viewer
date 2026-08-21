@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.3';
+const APP_VERSION = '2.2.4';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -3221,7 +3221,7 @@ const UI_I18N = {
     desc: '3D Viewer permet de visualiser vos fichiers 3D.',
     updated_date: '21 août 2026',
     created_date: '19 août 2026',
-    update_available: 'MAJ disponible !',
+    update_available: 'MàJ disponible',
   },
   en: {
     ready: 'Ready',
@@ -3233,7 +3233,7 @@ const UI_I18N = {
     load_file: 'Open file',
     about: 'About 3D Viewer',
     help: 'Help — 3D Viewer',
-    update_available: 'Update available!',
+    update_available: 'Update available',
     selection: 'Selection',
     colors: 'Colors',
     color: 'Color',
@@ -3530,8 +3530,8 @@ function setVersionStatus(kind) {
   if (kind === 'update') {
     el.classList.add('is-update');
     el.innerHTML = currentLang === 'en'
-      ? '(<a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">Update</a>)'
-      : '(<a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">Mettre à jour</a>)';
+      ? '(<a class="maj-link" href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">Update available</a>)'
+      : '(<a class="maj-link" href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">MàJ disponible</a>)';
   } else if (kind === 'ok') {
     el.classList.add('is-ok');
     el.textContent = currentLang === 'en' ? '(Up to date)' : '(Version à jour)';
@@ -3595,3 +3595,26 @@ document.getElementById('sec-mats')?.addEventListener('click', (e) => {
   if (panel) obs.observe(panel, { attributes: true, attributeFilter: ['class'] });
   sync();
 })();
+
+document.getElementById('btn-mats-collapse-all')?.addEventListener('click', () => {
+  document.querySelectorAll('#sec-mats .mat-group').forEach((g) => {
+    g.classList.add('collapsed');
+    const btn = g.querySelector('.mat-group-toggle');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      const chev = btn.querySelector('.mat-group-chevron');
+      if (chev) chev.textContent = '+';
+    }
+  });
+});
+document.getElementById('btn-mats-expand-all')?.addEventListener('click', () => {
+  document.querySelectorAll('#sec-mats .mat-group').forEach((g) => {
+    g.classList.remove('collapsed');
+    const btn = g.querySelector('.mat-group-toggle');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'true');
+      const chev = btn.querySelector('.mat-group-chevron');
+      if (chev) chev.textContent = '−';
+    }
+  });
+});
