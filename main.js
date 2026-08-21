@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.8';
+const APP_VERSION = '2.1.9';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -2275,53 +2275,94 @@ function collectMaterials() {
 
 function refreshMaterialSelect(preserveLabel = true) {
   const sel = document.getElementById('mat-select');
+  const list = document.getElementById('mat-select-list');
+  const btnLabel = document.getElementById('mat-select-btn-label');
+  const btnSw = document.getElementById('mat-select-btn-swatch');
   if (!sel) return;
   const prevBase = preserveLabel && sel.selectedOptions[0]
     ? (sel.selectedOptions[0].dataset.base || sel.selectedOptions[0].textContent)
     : null;
   collectMaterials();
   sel.innerHTML = '';
+  if (list) list.innerHTML = '';
   if (materialEntries.length === 0) {
-    sel.innerHTML = '<option value="">— aucun matériau —</option>';
+    sel.innerHTML = '<option value="">—</option>';
+    if (btnLabel) btnLabel.textContent = currentLang === 'en' ? '— no material —' : '— aucun matériau —';
+    if (btnSw) btnSw.style.background = '#666';
     return;
   }
   materialEntries.forEach((e, i) => {
+    const hex = e.material?.color ? ('#' + e.material.color.getHexString()) : '#888888';
     const opt = document.createElement('option');
     opt.value = String(i);
-    const hex = e.material?.color ? ('#' + e.material.color.getHexString()) : '#888888';
     opt.textContent = e.listLabel || e.label;
     opt.dataset.base = e.baseLabel;
     opt.dataset.color = hex;
-    // Note: native <option> ne permet pas de carré HTML ; on utilise un select custom si besoin
-    // Fallback: préfixe unicode carré coloré via text + style on select change
     sel.appendChild(opt);
+    if (list) {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'option');
+      li.dataset.value = String(i);
+      li.innerHTML = `<span class="mat-opt-label">${e.listLabel || e.label}</span><span class="mat-opt-swatch" style="background:${hex}"></span>`;
+      li.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        selectMaterialIndex(i);
+        closeMatSelectList();
+      });
+      list.appendChild(li);
+    }
   });
-  // peindre un swatch à droite du select
-  paintMatSelectSwatch();
   let idx = 0;
   if (prevBase) {
     const found = materialEntries.findIndex((e) => e.baseLabel === prevBase || e.label === prevBase);
     if (found >= 0) idx = found;
   }
-  sel.value = String(idx);
+  selectMaterialIndex(idx);
+}
+
+function selectMaterialIndex(idx) {
+  const sel = document.getElementById('mat-select');
+  if (sel) sel.value = String(idx);
   loadMaterialToUI(idx);
   paintMatSelectSwatch();
+  document.querySelectorAll('#mat-select-list li').forEach((li) => {
+    li.classList.toggle('selected', li.dataset.value === String(idx));
+  });
 }
 
 function paintMatSelectSwatch() {
-  const sel = document.getElementById('mat-select');
-  let sw = document.getElementById('mat-select-swatch');
-  if (!sw) {
-    sw = document.createElement('span');
-    sw.id = 'mat-select-swatch';
-    sw.className = 'mat-select-swatch';
-    sel?.parentElement?.appendChild(sw);
-  }
   const entry = getSelectedMaterialEntry();
   const hex = entry?.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
-  sw.style.background = hex;
-  sw.title = hex;
+  const btnSw = document.getElementById('mat-select-btn-swatch');
+  const btnLabel = document.getElementById('mat-select-btn-label');
+  if (btnSw) { btnSw.style.background = hex; btnSw.title = hex; }
+  if (btnLabel) btnLabel.textContent = entry ? (entry.listLabel || entry.label) : '—';
+  // hide legacy external swatch if any
+  const old = document.getElementById('mat-select-swatch');
+  if (old) old.style.display = 'none';
 }
+
+function closeMatSelectList() {
+  const list = document.getElementById('mat-select-list');
+  const btn = document.getElementById('mat-select-btn');
+  if (list) list.classList.add('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+function openMatSelectList() {
+  const list = document.getElementById('mat-select-list');
+  const btn = document.getElementById('mat-select-btn');
+  if (list) list.classList.remove('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+}
+document.getElementById('mat-select-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const list = document.getElementById('mat-select-list');
+  if (list?.classList.contains('hidden')) openMatSelectList();
+  else closeMatSelectList();
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('.mat-select-wrap')) closeMatSelectList();
+});
 
 function getSelectedMaterialEntry() {
   const sel = document.getElementById('mat-select');
@@ -2664,6 +2705,7 @@ canvas.addEventListener('dblclick', (e) => {
 
 
 document.getElementById('mat-select')?.addEventListener('change', (e) => {
+  paintMatSelectSwatch();
   const i = parseInt(e.target.value, 10);
   if (!isNaN(i)) { loadMaterialToUI(i); paintMatSelectSwatch(); }
 });

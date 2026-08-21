@@ -72,6 +72,16 @@
             <li><button type="button" id="menu-show-mats" title="Éditeur de matériaux"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg> Éditeur de matériaux</button></li>
             <li><button type="button" id="menu-reset-mats" title="Réinitialiser matériaux d'origine"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Réinitialiser matériaux d'origine</button></li>
             <li class="sep"></li>
+            <li class="menu-item-sub"><span class="menu-hint-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V6l4-3 4 3v6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Sol</span>
+              <ul class="menu-subdropdown">
+                <li><button type="button" id="ground-grid" class="ground-btn" data-ground="grid">Quadrillage</button></li>
+                <li><button type="button" id="ground-plane" class="ground-btn" data-ground="plane">Surface plate</button></li>
+                <li><button type="button" id="ground-none" class="ground-btn" data-ground="none">Aucun</button></li>
+              </ul>
+            </li>
+            <li><button type="button" id="menu-edit-ground" title="Modifier le sol"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V7l4-3 4 3v5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Modifier le sol</button></li>
+
+            <li class="sep"></li>
             <li><button type="button" id="menu-show-lights" title="Lumières"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> Lumières</button></li>
             <li><button type="button" id="menu-add-ambient" title="+ Ambient"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Ambient</button></li>
             <li><button type="button" id="menu-add-directional" title="+ Directional"><svg class="ico" viewBox="0 0 16 16"><path d="M2 8h9M9 5l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> + Directional</button></li>
@@ -90,15 +100,6 @@
             <li><button type="button" id="menu-toggle-gizmo" title="Gizmo"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3"/><path d="M8 2l2 2M8 2L6 4M14 8l-2-2M14 8l-2 2" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> <span class="dyn-label" data-dyn="gizmo">Masquer les gizmo</span></button></li>
             <li><button type="button" id="menu-toggle-panel" title="Panneau flottant"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 3v10" stroke="currentColor" stroke-width="1.2"/></svg> Panneau flottant</button></li>
             <li class="sep"></li>
-            <li class="menu-item-sub"><span class="menu-hint-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V6l4-3 4 3v6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Sol</span>
-              <ul class="menu-subdropdown">
-                <li><button type="button" id="ground-grid" class="ground-btn" data-ground="grid">Quadrillage</button></li>
-                <li><button type="button" id="ground-plane" class="ground-btn" data-ground="plane">Surface plate</button></li>
-                <li><button type="button" id="ground-none" class="ground-btn" data-ground="none">Aucun</button></li>
-              </ul>
-            </li>
-            <li class="sep"></li>
-            <li><button type="button" id="menu-edit-ground" title="Modifier le sol"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V7l4-3 4 3v5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Modifier le sol</button></li>
             <li><button type="button" id="menu-theme-light" title="Thème"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> <span class="dyn-label" data-dyn="theme">Affichage clair</span></button></li>
           </ul>
         </li>
@@ -155,9 +156,15 @@
         <div id="mat-name-header" class="mat-name-header" title="">—</div>
         <div class="control-row">
           <label>Sélection</label>
-          <select id="mat-select">
-            <option value="">— aucun modèle —</option>
-          </select>
+          <div class="mat-select-wrap">
+            <button type="button" id="mat-select-btn" class="mat-select-btn" aria-haspopup="listbox" aria-expanded="false">
+              <span class="mat-select-btn-swatch" id="mat-select-btn-swatch"></span>
+              <span class="mat-select-btn-label" id="mat-select-btn-label">—</span>
+              <span class="mat-select-caret">▾</span>
+            </button>
+            <ul id="mat-select-list" class="mat-select-list hidden" role="listbox"></ul>
+            <select id="mat-select" class="mat-select-native-hidden" aria-hidden="true" tabindex="-1"></select>
+          </div>
         </div>
         <div class="controls" id="mat-controls">
         <div class="mat-group mat-group-colors">
@@ -355,7 +362,7 @@
           </div>
           <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.1.8</span> <span id="about-version-status" class="version-status"></span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.1.9</span> <span id="about-version-status" class="version-status"></span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">21 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
@@ -370,7 +377,7 @@
               webmaster@chorfa.fr
             </a>
             <a class="about-link" href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">
-              <svg class="ico about-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 2.9 1.9 5.3 4.5 6.2.3.1.4-.1.4-.3v-1.1c-1.8.4-2.2-.8-2.2-.8-.3-.7-.7-.9-.7-.9-.6-.4.1-.4.1-.4.6.1 1 .7 1 .7.6 1 1.5.7 1.9.5.1-.4.2-.7.4-.9-1.5-.2-3-0.7-3-3.2 0-.7.3-1.3.7-1.8-.1-.2-.3-.9.1-1.8 0 0 .6-.2 1.9.7.5-.1 1.1-.2 1.7-.2s1.2.1 1.7.2c1.3-.9 1.9-.7 1.9-.7.4.9.2 1.6.1 1.8.4.5.7 1.1.7 1.8 0 2.5-1.6 3-3.1 3.2.2.2.5.6.5 1.2v1.8c0 .2.1.8.4.3 2.6-.9 4.5-3.3 4.5-6.2C14.5 4.4 11.6 1.5 8 1.5z"/></svg>
+              <svg class="ico about-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 2.9 1.9 5.3 4.5 6.2.3.1.4-.1.4-.3v-1.1c-1.8.4-2.2-.8-2.2-.8-.3-.7-.7-.9-.7-.9-.6-.4.1-.4.1-.4.6.1 1 .7 1 .7.6 1 1.5.7 1.9.5.1-.4.2-.7.4-.9-1.5-.2-3-0.7-3-3.2 0-.7.3-1.3.7-1.8-.1-.2-.3-.9.1-1.8 0 0 .6-.2 1.9.7.5-.1 1.1-.2 1.7-.2s1.2.1 1.7.2c1.3-.9 1.9-.7 1.9-.7.4.9.2 1.6.1 1.8.4.5.7 1.1.7 1.8 0 2.5-1.6 3-3.1 3.2.2.2.5.6.5 1.2v1.8c0 .2.1.9.4.3 2.6-.9 4.5-3.3 4.5-6.2C14.5 4.4 11.6 1.5 8 1.5z"/></svg>
               GitHub — dino213dz/3D-Viewer
             </a>
           </p>

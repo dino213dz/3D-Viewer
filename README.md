@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 19:07 CEST  
+**Dernière mise à jour :** 21 août 2026, 19:30 CEST  
 
-**Version :** 2.1.8
+**Version :** 2.1.9
 
 ---
 
@@ -44,6 +44,12 @@
 ---
 
 ## Historique des versions
+
+### 2.1.9 — 21 août 2026, 19:30 CEST
+- Options Sol déplacées dans Menu > Éditer
+- Mode clair : plus de bleu, accent orange ; listes déroulantes gris fenêtre
+- Alignement vertical des liens du menu
+- Liste matériaux : pastille couleur dans chaque ligne (plus de carré à droite du select)
 
 ### 2.1.8 — 21 août 2026, 19:07 CEST
 - Icône fermeture fenêtre en X clair

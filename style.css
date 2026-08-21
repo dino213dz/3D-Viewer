@@ -1346,7 +1346,7 @@ body.theme-light .menu-dropdown button { color: #000; }
 body.theme-light .menu-item.open > .menu-label,
 body.theme-light .menu-item:hover > .menu-label,
 body.theme-light .menu-dropdown button:hover {
-  background: #000080 !important;
+  background: #F54927 !important;
   color: #fff !important;
 }
 body.theme-light .side-panel {
@@ -1931,4 +1931,133 @@ body.theme-light select {
   background: #fff !important;
   color: #000 !important;
   border: 1px solid #808080 !important;
+}
+
+/* ========== 2.1.9 ========== */
+/* Menu vertical alignment */
+.menu-dropdown > li > button,
+.menu-dropdown > li > .menu-hint-label,
+.menu-subdropdown > li > button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 28px !important;
+  padding: 6px 14px !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+}
+.menu-dropdown .ico,
+.menu-subdropdown .ico {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* Light mode: no blue, orange accent, gray selects */
+body.theme-light {
+  --accent: #F54927 !important;
+  --accent-hover: #d43d1f !important;
+}
+body.theme-light .menu-item.open > .menu-label,
+body.theme-light .menu-item:hover > .menu-label,
+body.theme-light .menu-dropdown button:hover,
+body.theme-light .menu-subdropdown button:hover {
+  background: #F54927 !important;
+  color: #fff !important;
+}
+body.theme-light select,
+body.theme-light .mat-select-btn,
+body.theme-light .mat-select-list {
+  background: #dfdfdf !important;
+  color: #000 !important;
+  border: 1px solid #808080 !important;
+}
+body.theme-light #ground-type-select {
+  background: #dfdfdf !important;
+  color: #000 !important;
+}
+
+/* Custom material select with swatches in list */
+.mat-select-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.mat-select-native-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.mat-select-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.25);
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+.mat-select-btn-swatch,
+.mat-opt-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.35);
+  flex-shrink: 0;
+  display: inline-block;
+}
+.mat-select-btn-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mat-select-caret { opacity: 0.7; font-size: 10px; }
+.mat-select-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 40;
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border-radius: 8px;
+  background: rgba(42,44,51,0.98);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.mat-select-list.hidden { display: none !important; }
+.mat-select-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.mat-select-list li:hover,
+.mat-select-list li.selected {
+  background: rgba(245, 73, 39, 0.25);
+}
+.mat-opt-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mat-select-swatch { display: none !important; }
+body.theme-light .mat-select-list li:hover,
+body.theme-light .mat-select-list li.selected {
+  background: rgba(245, 73, 39, 0.2);
 }
