@@ -18,6 +18,15 @@
 <body>
   <div id="app">
     <canvas id="c"></canvas>
+    <div id="ctx-menu" class="ctx-menu hidden" role="menu">
+      <button type="button" data-act="frame-object">Centrer la vue sur l'objet</button>
+      <button type="button" data-act="frame-mouse">Centrer la vue sur le pointeur</button>
+      <div class="ctx-sep"></div>
+      <button type="button" data-act="gizmo"><span data-ctx="gizmo">Masquer les gizmo</span></button>
+      <button type="button" data-act="wireframe"><span data-ctx="wire">Wireframe</span></button>
+      <button type="button" data-act="ground"><span data-ctx="ground">Sol : quadrillage</span></button>
+      <button type="button" data-act="helpers"><span data-ctx="helpers">Masquer les cônes</span></button>
+    </div>
     <div id="mat-pick-bubble" class="mat-pick-bubble hidden" role="status"></div>
 
     <!-- Menu barre style macOS -->
@@ -69,7 +78,7 @@
             <li><button type="button" id="menu-add-directional" title="+ Directional"><svg class="ico" viewBox="0 0 16 16"><path d="M2 8h9M9 5l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> + Directional</button></li>
             <li><button type="button" id="menu-add-point" title="+ Point"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".6"/></svg> + Point</button></li>
             <li><button type="button" id="menu-add-spot" title="+ Spot"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2l5 12H3L8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Spot</button></li>
-            <li><button type="button" id="menu-toggle-helpers" title="Afficher / masquer les cônes de lumière"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2l5 12H3L8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Afficher / masquer les cônes de lumière</button></li>
+            <li><button type="button" id="menu-toggle-helpers" title="Cônes de lumière"><svg class="ico" viewBox="0 0 16 16"><path d="M8 3v4M6 7h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M4 11c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="12.5" r="1.2" fill="currentColor"/></svg> <span class="dyn-label" data-dyn="helpers">Masquer les cônes de lumière</span></button></li>
           </ul>
         </li>
         <li class="menu-item">
@@ -79,7 +88,7 @@
             <li><button type="button" id="menu-frame-visible" title="Cadrer zone visible"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 5h3v6h-3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg> Cadrer zone visible</button></li>
             <li class="sep"></li>
             <li><button type="button" id="menu-wireframe" title="Wireframe"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12L8 2l6 10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 12l3-5 3 5M8 2v5" stroke="currentColor" stroke-width="1"/></svg> Wireframe</button></li>
-            <li><button type="button" id="menu-toggle-gizmo" title="Afficher / masquer les gizmo"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3"/><path d="M8 2l2 2M8 2L6 4M14 8l-2-2M14 8l-2 2" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> Afficher / masquer les gizmo</button></li>
+            <li><button type="button" id="menu-toggle-gizmo" title="Gizmo"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3"/><path d="M8 2l2 2M8 2L6 4M14 8l-2-2M14 8l-2 2" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> <span class="dyn-label" data-dyn="gizmo">Masquer les gizmo</span></button></li>
             <li><button type="button" id="menu-toggle-panel" title="Panneau flottant"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 3v10" stroke="currentColor" stroke-width="1.2"/></svg> Panneau flottant</button></li>
             <li class="sep"></li>
             <li class="menu-item-sub"><span class="menu-hint-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V6l4-3 4 3v6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Sol</span>
@@ -89,7 +98,9 @@
                 <li><button type="button" id="ground-none" class="ground-btn" data-ground="none">Aucun</button></li>
               </ul>
             </li>
-            <li><button type="button" id="menu-theme-light" title="Affichage clair"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> Affichage clair</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-edit-ground" title="Modifier le sol"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V7l4-3 4 3v5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Modifier le sol</button></li>
+            <li><button type="button" id="menu-theme-light" title="Thème"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> <span class="dyn-label" data-dyn="theme">Affichage clair</span></button></li>
           </ul>
         </li>
       </ul>
@@ -115,7 +126,7 @@
         <button type="button" id="toolbar-lights" class="toolbar-btn" data-tip="Lumières" title="Lumières" aria-label="Lumières">
           <svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/></svg>
         </button>
-        <div class="menu-brand">3D Viewer</div>
+        <button type="button" class="menu-brand" id="brand-about" title="À propos">3D Viewer</button>
       </div>
     </nav>
 
@@ -230,6 +241,35 @@
         <button type="button" id="btn-reset-mats" class="btn secondary" style="margin-top:6px">Réinitialiser matériaux d'origine</button>
       </section>
 
+      <!-- Sol -->
+      <section class="side-section hidden" id="sec-ground">
+        <h3>Sol</h3>
+        <div class="controls">
+          <div class="control-row">
+            <label>Type</label>
+            <select id="ground-type-select">
+              <option value="grid">Quadrillage</option>
+              <option value="plane">Surface plate</option>
+              <option value="none">Aucun</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label>Couleur</label>
+            <input type="color" id="ground-color" value="#2a2d36" />
+          </div>
+          <div class="control-row">
+            <label>Metalness</label>
+            <input type="range" id="ground-metal" min="0" max="1" step="0.01" value="0.05" />
+            <span id="val-ground-metal">0.05</span>
+          </div>
+          <div class="control-row">
+            <label>Roughness</label>
+            <input type="range" id="ground-rough" min="0" max="1" step="0.01" value="0.9" />
+            <span id="val-ground-rough">0.90</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Lumières -->
       <section class="side-section hidden" id="sec-lights">
         <h3>Lumières <span id="light-count">(0)</span></h3>
@@ -311,7 +351,7 @@
           </div>
           <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.1.0</span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.1.2</span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">21 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>

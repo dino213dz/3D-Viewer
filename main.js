@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.1.2';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -222,7 +222,10 @@ function setGroundMode(mode) {
   document.querySelectorAll('.ground-btn').forEach((b) => {
     b.classList.toggle('active', b.dataset.ground === groundMode);
   });
+  const gsel = document.getElementById('ground-type-select');
+  if (gsel) gsel.value = groundMode;
   try { localStorage.setItem('3dviewer_ground', groundMode); } catch (_) {}
+  updateDynamicMenuLabels?.();
   setStatus(groundMode === 'grid' ? 'Sol : quadrillage' : groundMode === 'plane' ? 'Sol : surface plate' : 'Sol : aucun');
 }
 document.getElementById('ground-grid')?.addEventListener('click', () => setGroundMode('grid'));
@@ -988,6 +991,7 @@ let wireframeMode = false;
 
 function toggleWireframe() {
   wireframeMode = !wireframeMode;
+  updateDynamicMenuLabels?.();
   if (currentModel) {
     currentModel.traverse((child) => {
       if (child.isMesh && child.material) {
@@ -1220,18 +1224,41 @@ function openMenuItem(item) {
 const menuBurger = document.getElementById('menu-burger');
 const menuRoot = document.getElementById('menu-root');
 menuBurger?.addEventListener('click', (e) => {
+  e.preventDefault();
   e.stopPropagation();
-  menuRoot?.classList.toggle('menu-open');
-  menuBurger.classList.toggle('active');
-});
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#menubar')) {
+  const willOpen = !menuRoot?.classList.contains('menu-open');
+  if (willOpen) {
+    menuRoot?.classList.add('menu-open');
+    menuBurger.classList.add('active');
+  } else {
     collapseMenus();
   }
 });
 
-// Fermer le menu dès qu'on clique sur une action
-document.querySelectorAll('.menu-dropdown button, #menu-about').forEach((btn) => {
+// Fermer si clic / touch en dehors de la barre de menu
+function isInsideMenubar(target) {
+  return !!(target && (target.closest?.('#menubar') || target.closest?.('#ctx-menu')));
+}
+document.addEventListener('pointerdown', (e) => {
+  if (!isInsideMenubar(e.target)) collapseMenus();
+}, true);
+document.addEventListener('click', (e) => {
+  if (!isInsideMenubar(e.target)) collapseMenus();
+}, true);
+
+// Fermer le menu dès qu'on clique sur une action (délégation — mobile + desktop)
+menuRoot?.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  // titres Fichier / Éditer / Vue : ouvrent un sous-menu, ne pas fermer ici
+  if (btn.classList.contains('menu-label')) return;
+  // inputs color dans le menu : ne pas fermer immédiatement (l'utilisateur choisit une couleur)
+  if (btn.closest?.('.menu-sky-row') && e.target.closest('input')) return;
+  // toute autre action : fermer (burger inclus)
+  setTimeout(collapseMenus, 0);
+});
+// Compat : anciens bind directs
+document.querySelectorAll('.menu-dropdown button, .menu-subdropdown button, #menu-about, #menu-help').forEach((btn) => {
   btn.addEventListener('click', () => {
     setTimeout(collapseMenus, 0);
   });
@@ -1414,6 +1441,7 @@ function setLightHelpersVisible(vis) {
   lights.forEach((e) => {
     if (e.helper) e.helper.visible = lightHelpersVisible;
   });
+  updateDynamicMenuLabels();
   setStatus(lightHelpersVisible ? 'Cônes de lumière affichés.' : 'Cônes de lumière masqués.');
 }
 document.getElementById('menu-toggle-helpers')?.addEventListener('click', () => {
@@ -1421,12 +1449,56 @@ document.getElementById('menu-toggle-helpers')?.addEventListener('click', () => 
 });
 
 let gizmosVisible = true;
+
+function updateDynamicMenuLabels() {
+  const t = (key) => {
+    const fr = {
+      gizmoOn: 'Masquer les gizmo', gizmoOff: 'Afficher les gizmo',
+      helpersOn: 'Masquer les cônes de lumière', helpersOff: 'Afficher les cônes de lumière',
+      themeLight: 'Affichage clair', themeDark: 'Affichage sombre',
+      wireOn: 'Désactiver le wireframe', wireOff: 'Wireframe',
+      ground: groundMode === 'grid' ? 'Sol : surface plate' : groundMode === 'plane' ? 'Sol : aucun' : 'Sol : quadrillage',
+    };
+    const en = {
+      gizmoOn: 'Hide gizmos', gizmoOff: 'Show gizmos',
+      helpersOn: 'Hide light cones', helpersOff: 'Show light cones',
+      themeLight: 'Light mode', themeDark: 'Dark mode',
+      wireOn: 'Disable wireframe', wireOff: 'Wireframe',
+      ground: groundMode === 'grid' ? 'Ground: flat' : groundMode === 'plane' ? 'Ground: none' : 'Ground: grid',
+    };
+    const dict = currentLang === 'en' ? en : fr;
+    return dict[key] || key;
+  };
+  document.querySelectorAll('[data-dyn="gizmo"]').forEach((el) => {
+    el.textContent = gizmosVisible ? t('gizmoOn') : t('gizmoOff');
+  });
+  document.querySelectorAll('[data-dyn="helpers"]').forEach((el) => {
+    el.textContent = lightHelpersVisible ? t('helpersOn') : t('helpersOff');
+  });
+  document.querySelectorAll('[data-dyn="theme"]').forEach((el) => {
+    el.textContent = document.body.classList.contains('theme-light') ? t('themeDark') : t('themeLight');
+  });
+  document.querySelectorAll('[data-ctx="gizmo"]').forEach((el) => {
+    el.textContent = gizmosVisible ? t('gizmoOn') : t('gizmoOff');
+  });
+  document.querySelectorAll('[data-ctx="helpers"]').forEach((el) => {
+    el.textContent = lightHelpersVisible ? t('helpersOn') : t('helpersOff');
+  });
+  document.querySelectorAll('[data-ctx="wire"]').forEach((el) => {
+    el.textContent = wireframeMode ? t('wireOn') : t('wireOff');
+  });
+  document.querySelectorAll('[data-ctx="ground"]').forEach((el) => {
+    el.textContent = t('ground');
+  });
+}
+
 function setGizmosVisible(vis) {
   gizmosVisible = !!vis;
   if (typeof sceneAxes !== 'undefined' && sceneAxes) sceneAxes.visible = gizmosVisible;
   if (typeof axesGizmo !== 'undefined' && axesGizmo) axesGizmo.visible = gizmosVisible;
   try { localStorage.setItem('3dviewer_gizmos', gizmosVisible ? '1' : '0'); } catch (_) {}
-  setStatus(gizmosVisible ? 'Gizmo affichés.' : 'Gizmo masqués.');
+  updateDynamicMenuLabels();
+  setStatus(gizmosVisible ? (currentLang==='en'?'Gizmos shown.':'Gizmo affichés.') : (currentLang==='en'?'Gizmos hidden.':'Gizmo masqués.'));
 }
 document.getElementById('menu-toggle-gizmo')?.addEventListener('click', () => {
   setGizmosVisible(!gizmosVisible);
@@ -1435,8 +1507,10 @@ document.getElementById('menu-theme-light')?.addEventListener('click', () => {
   document.body.classList.toggle('theme-light');
   const on = document.body.classList.contains('theme-light');
   try { localStorage.setItem('3dviewer_theme', on ? 'light' : 'dark'); } catch (_) {}
-  setStatus(on ? 'Affichage clair' : 'Affichage sombre');
+  updateDynamicMenuLabels();
+  setStatus(on ? (currentLang==='en'?'Light mode':'Affichage clair') : (currentLang==='en'?'Dark mode':'Affichage sombre'));
 });
+
 try {
   if (localStorage.getItem('3dviewer_theme') === 'light') document.body.classList.add('theme-light');
 } catch (_) {}
@@ -2124,7 +2198,9 @@ function collectMaterials() {
   });
   materialEntries.sort((a, b) => a.baseLabel.localeCompare(b.baseLabel, 'fr', { sensitivity: 'base' }));
   materialEntries.forEach((e, i) => {
-    e.label = (i + 1) + '-' + e.baseLabel;
+    e.baseLabel = e.baseLabel;
+    e.label = e.baseLabel; // sans numéro (affichage en-tête / bulles)
+    e.listLabel = (i + 1) + '-' + e.baseLabel; // avec numéro (liste)
     e.key = String(i);
   });
   return materialEntries;
@@ -2145,10 +2221,16 @@ function refreshMaterialSelect(preserveLabel = true) {
   materialEntries.forEach((e, i) => {
     const opt = document.createElement('option');
     opt.value = String(i);
-    opt.textContent = e.label;
+    const hex = e.material?.color ? ('#' + e.material.color.getHexString()) : '#888888';
+    opt.textContent = e.listLabel || e.label;
     opt.dataset.base = e.baseLabel;
+    opt.dataset.color = hex;
+    // Note: native <option> ne permet pas de carré HTML ; on utilise un select custom si besoin
+    // Fallback: préfixe unicode carré coloré via text + style on select change
     sel.appendChild(opt);
   });
+  // peindre un swatch à droite du select
+  paintMatSelectSwatch();
   let idx = 0;
   if (prevBase) {
     const found = materialEntries.findIndex((e) => e.baseLabel === prevBase || e.label === prevBase);
@@ -2156,6 +2238,22 @@ function refreshMaterialSelect(preserveLabel = true) {
   }
   sel.value = String(idx);
   loadMaterialToUI(idx);
+  paintMatSelectSwatch();
+}
+
+function paintMatSelectSwatch() {
+  const sel = document.getElementById('mat-select');
+  let sw = document.getElementById('mat-select-swatch');
+  if (!sw) {
+    sw = document.createElement('span');
+    sw.id = 'mat-select-swatch';
+    sw.className = 'mat-select-swatch';
+    sel?.parentElement?.appendChild(sw);
+  }
+  const entry = getSelectedMaterialEntry();
+  const hex = entry?.material?.color ? ('#' + entry.material.color.getHexString()) : '#666';
+  sw.style.background = hex;
+  sw.title = hex;
 }
 
 function getSelectedMaterialEntry() {
@@ -2376,15 +2474,30 @@ function showMatPickBubble(text, clientX, clientY) {
 }
 
 function onCanvasPointerClick(e) {
-  if (!currentModel) return;
-  // ignorer drag orbit : petit mouvement seulement
   if (e.target !== canvas) return;
   const rect = canvas.getBoundingClientRect();
   pickPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   pickRaycaster.setFromCamera(pickPointer, camera);
+  // Sol
+  const groundHits = [];
+  if (grid.visible) groundHits.push(...pickRaycaster.intersectObject(grid, true));
+  if (groundPlane.visible) groundHits.push(...pickRaycaster.intersectObject(groundPlane, true));
+  if (groundHits.length && (!currentModel || !pickRaycaster.intersectObject(currentModel, true).length || groundHits[0].distance < (pickRaycaster.intersectObject(currentModel, true)[0]?.distance ?? Infinity))) {
+    // prefer model if closer; only open ground if primarily ground
+  }
+  if (!currentModel) {
+    if (groundHits.length) {
+      showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
+      return;
+    }
+    return;
+  }
   const hits = pickRaycaster.intersectObject(currentModel, true);
-  if (!hits.length) return;
+  if (!hits.length) {
+    if (groundHits.length) showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
+    return;
+  }
   const hit = hits[0];
   const mesh = hit.object;
   if (!mesh.isMesh || !mesh.material) return;
@@ -2454,7 +2567,7 @@ canvas.addEventListener('dblclick', (e) => {
 
 document.getElementById('mat-select')?.addEventListener('change', (e) => {
   const i = parseInt(e.target.value, 10);
-  if (!isNaN(i)) loadMaterialToUI(i);
+  if (!isNaN(i)) { loadMaterialToUI(i); paintMatSelectSwatch(); }
 });
 
 ['mat-metal', 'mat-rough', 'mat-opacity', 'mat-trans', 'mat-emissive-int', 'mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
@@ -2764,15 +2877,90 @@ document.getElementById('help-close')?.addEventListener('click', () => {
   });
 })();
 
-const I18N = {
-  fr: { ready: 'Prêt', file: 'Fichier', edit: 'Éditer', view: 'Vue' },
-  en: { ready: 'Ready', file: 'File', edit: 'Edit', view: 'View' },
+const MENU_I18N = {
+  fr: {
+    'Fichier': 'Fichier', 'Éditer': 'Éditer', 'Vue': 'Vue',
+    'Charger un fichier…': 'Charger un fichier…',
+    'Effacer le modèle': 'Effacer le modèle',
+    'Recharger le modèle par défaut': 'Recharger le modèle par défaut',
+    'Propriétés du fichier': 'Propriétés du fichier',
+    'Langues': 'Langues', 'Aide': 'Aide', 'À propos': 'À propos',
+    'Annuler': 'Annuler', 'Refaire': 'Refaire',
+    'Couleur du ciel': 'Couleur du ciel',
+    'Réinitialiser couleur du ciel': 'Réinitialiser couleur du ciel',
+    'Éditeur de matériaux': 'Éditeur de matériaux',
+    'Réinitialiser matériaux d\'origine': 'Réinitialiser matériaux d\'origine',
+    'Lumières': 'Lumières',
+    'Cadrer l\'objet': 'Cadrer l\'objet',
+    'Cadrer zone visible': 'Cadrer zone visible',
+    'Wireframe': 'Wireframe',
+    'Panneau flottant': 'Panneau flottant',
+    'Sol': 'Sol', 'Quadrillage': 'Quadrillage', 'Surface plate': 'Surface plate', 'Aucun': 'Aucun',
+    'Modifier le sol': 'Modifier le sol',
+  },
+  en: {
+    'Fichier': 'File', 'Éditer': 'Edit', 'Vue': 'View',
+    'Charger un fichier…': 'Open file…',
+    'Effacer le modèle': 'Clear model',
+    'Recharger le modèle par défaut': 'Reload default model',
+    'Propriétés du fichier': 'File properties',
+    'Langues': 'Languages', 'Aide': 'Help', 'À propos': 'About',
+    'Annuler': 'Undo', 'Refaire': 'Redo',
+    'Couleur du ciel': 'Sky color',
+    'Réinitialiser couleur du ciel': 'Reset sky color',
+    'Éditeur de matériaux': 'Material editor',
+    'Réinitialiser matériaux d\'origine': 'Reset original materials',
+    'Lumières': 'Lights',
+    'Cadrer l\'objet': 'Frame object',
+    'Cadrer zone visible': 'Frame visible area',
+    'Wireframe': 'Wireframe',
+    'Panneau flottant': 'Floating panel',
+    'Sol': 'Ground', 'Quadrillage': 'Grid', 'Surface plate': 'Flat surface', 'Aucun': 'None',
+    'Modifier le sol': 'Edit ground',
+  },
 };
 let currentLang = 'fr';
 function setLanguage(lang) {
   currentLang = lang === 'en' ? 'en' : 'fr';
   document.documentElement.lang = currentLang;
   document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === currentLang));
+  const dict = MENU_I18N[currentLang] || MENU_I18N.fr;
+  document.querySelectorAll('.menu-label, .menu-dropdown button, .menu-hint-label, .ground-btn').forEach((el) => {
+    if (el.querySelector('.dyn-label')) return; // handled separately
+    if (el.id && el.id.startsWith('lang-')) return;
+    if (el.classList.contains('ground-btn')) {
+      const g = el.dataset.ground;
+      const map = currentLang === 'en'
+        ? { grid: 'Grid', plane: 'Flat surface', none: 'None' }
+        : { grid: 'Quadrillage', plane: 'Surface plate', none: 'Aucun' };
+      if (map[g]) el.textContent = map[g];
+      return;
+    }
+    // Translate by walking text nodes after svg
+    const nodes = [...el.childNodes];
+    nodes.forEach((n) => {
+      if (n.nodeType === 3) {
+        const raw = n.textContent.trim();
+        if (!raw) return;
+        // keep original in data-i18n-src
+        if (!el.dataset.i18nSrc) el.dataset.i18nSrc = raw;
+        const src = el.dataset.i18nSrc;
+        if (dict[src]) n.textContent = ' ' + dict[src];
+        else if (MENU_I18N.fr[src] && currentLang === 'fr') n.textContent = ' ' + src;
+      }
+    });
+    // menu-label: same
+    if (el.classList.contains('menu-label') || el.classList.contains('menu-hint-label')) {
+      const txt = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ');
+      if (!el.dataset.i18nSrc && txt) el.dataset.i18nSrc = txt;
+      if (el.dataset.i18nSrc && dict[el.dataset.i18nSrc]) {
+        [...el.childNodes].forEach((n) => {
+          if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' ' + dict[el.dataset.i18nSrc];
+        });
+      }
+    }
+  });
+  updateDynamicMenuLabels?.();
   try { localStorage.setItem('3dviewer_lang', currentLang); } catch (_) {}
   setStatus(currentLang === 'en' ? 'Language: English' : 'Langue : Français');
 }
@@ -2782,3 +2970,97 @@ try {
   const l = localStorage.getItem('3dviewer_lang');
   if (l) setLanguage(l);
 } catch (_) {}
+
+document.getElementById('brand-about')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  collapseMenus();
+  document.getElementById('about-modal')?.classList.remove('hidden');
+});
+
+document.getElementById('menu-edit-ground')?.addEventListener('click', () => {
+  showSection('sec-ground', currentLang === 'en' ? 'Ground' : 'Sol');
+});
+document.getElementById('ground-type-select')?.addEventListener('change', (e) => setGroundMode(e.target.value));
+document.getElementById('ground-color')?.addEventListener('input', (e) => {
+  const c = e.target.value;
+  if (groundPlane.material) {
+    groundPlane.material.color.set(c);
+    groundPlane.material.needsUpdate = true;
+  }
+  // tint grid roughly
+  if (grid?.material) {
+    if (Array.isArray(grid.material)) {
+      grid.material.forEach((m) => { m.color?.set?.(c); m.needsUpdate = true; });
+    } else {
+      grid.material.color?.set?.(c);
+    }
+  }
+});
+document.getElementById('ground-metal')?.addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  document.getElementById('val-ground-metal').textContent = v.toFixed(2);
+  if (groundPlane.material) groundPlane.material.metalness = v;
+});
+document.getElementById('ground-rough')?.addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  document.getElementById('val-ground-rough').textContent = v.toFixed(2);
+  if (groundPlane.material) groundPlane.material.roughness = v;
+});
+
+// Click on ground opens editor
+canvas.addEventListener('pointerup', (e) => {
+  // handled after pick — ground hit
+}, true);
+
+(function setupContextMenu() {
+  const ctx = document.getElementById('ctx-menu');
+  if (!ctx) return;
+  let lastCtx = { x: 0, y: 0 };
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    lastCtx = { x: e.clientX, y: e.clientY };
+    updateDynamicMenuLabels();
+    ctx.classList.remove('hidden');
+    const w = ctx.offsetWidth, h = ctx.offsetHeight;
+    ctx.style.left = Math.min(e.clientX, window.innerWidth - w - 8) + 'px';
+    ctx.style.top = Math.min(e.clientY, window.innerHeight - h - 8) + 'px';
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!ctx.contains(e.target)) ctx.classList.add('hidden');
+  });
+  ctx.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    ctx.classList.add('hidden');
+    if (act === 'frame-object') {
+      if (currentModel) doFrame();
+    } else if (act === 'frame-mouse') {
+      const rect = canvas.getBoundingClientRect();
+      pickPointer.x = ((lastCtx.x - rect.left) / rect.width) * 2 - 1;
+      pickPointer.y = -((lastCtx.y - rect.top) / rect.height) * 2 + 1;
+      pickRaycaster.setFromCamera(pickPointer, camera);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const target = new THREE.Vector3();
+      pickRaycaster.ray.intersectPlane(plane, target);
+      if (target) {
+        controls.target.copy(target);
+        controls.update();
+        setStatus(currentLang === 'en' ? 'View centered on pointer' : 'Vue centrée sur le pointeur');
+      }
+    } else if (act === 'gizmo') {
+      setGizmosVisible(!gizmosVisible);
+    } else if (act === 'wireframe') {
+      toggleWireframe();
+      updateDynamicMenuLabels();
+    } else if (act === 'ground') {
+      const order = ['grid', 'plane', 'none'];
+      const i = order.indexOf(groundMode);
+      setGroundMode(order[(i + 1) % order.length]);
+    } else if (act === 'helpers') {
+      setLightHelpersVisible(!lightHelpersVisible);
+    }
+  });
+})();
+updateDynamicMenuLabels?.();
