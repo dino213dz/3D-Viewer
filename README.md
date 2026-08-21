@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 18:38 CEST  
+**Dernière mise à jour :** 21 août 2026, 19:07 CEST  
 
-**Version :** 2.1.7
+**Version :** 2.1.8
 
 ---
 
@@ -44,6 +44,13 @@
 ---
 
 ## Historique des versions
+
+### 2.1.8 — 21 août 2026, 19:07 CEST
+- Icône fermeture fenêtre en X clair
+- Bouton « Réinitialiser le sol »
+- Cartes lumières adaptées au mode clair
+- Fix data-lang Français (data-lang="fr") ; seule la langue active en surbrillance
+- Liens À propos : noir (clair) / blanc (sombre), sans accent
 
 ### 2.1.7 — 21 août 2026, 18:38 CEST
 - Barre de titre : titre et boutons centrés verticalement (plus collés en haut)

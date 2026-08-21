@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.7';
+const APP_VERSION = '2.1.8';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -236,6 +236,32 @@ function setGroundMode(mode) {
 document.getElementById('ground-grid')?.addEventListener('click', () => setGroundMode('grid'));
 document.getElementById('ground-plane')?.addEventListener('click', () => setGroundMode('plane'));
 document.getElementById('ground-none')?.addEventListener('click', () => setGroundMode('none'));
+
+const GROUND_DEFAULTS = { color: '#2a2d36', metalness: 0.05, roughness: 0.9, mode: 'grid' };
+function resetGround() {
+  setGroundMode(GROUND_DEFAULTS.mode);
+  const col = document.getElementById('ground-color');
+  if (col) {
+    col.value = GROUND_DEFAULTS.color;
+    if (groundPlane.material) groundPlane.material.color.set(GROUND_DEFAULTS.color);
+  }
+  const m = document.getElementById('ground-metal');
+  const r = document.getElementById('ground-rough');
+  if (m) {
+    m.value = GROUND_DEFAULTS.metalness;
+    if (groundPlane.material) groundPlane.material.metalness = GROUND_DEFAULTS.metalness;
+    const vm = document.getElementById('val-ground-metal');
+    if (vm) vm.textContent = Number(GROUND_DEFAULTS.metalness).toFixed(2);
+  }
+  if (r) {
+    r.value = GROUND_DEFAULTS.roughness;
+    if (groundPlane.material) groundPlane.material.roughness = GROUND_DEFAULTS.roughness;
+    const vr = document.getElementById('val-ground-rough');
+    if (vr) vr.textContent = Number(GROUND_DEFAULTS.roughness).toFixed(2);
+  }
+  setStatus(currentLang === 'en' ? 'Ground reset.' : 'Sol réinitialisé.');
+}
+document.getElementById('btn-reset-ground')?.addEventListener('click', resetGround);
 try {
   const gm = localStorage.getItem('3dviewer_ground');
   if (gm) setGroundMode(gm);
@@ -3146,6 +3172,8 @@ function applyUITranslations() {
   // Buttons clear tex
   const clr = document.getElementById('btn-clear-tex');
   if (clr) clr.textContent = currentLang === 'en' ? 'Remove' : 'Retirer';
+  const rg = document.getElementById('btn-reset-ground');
+  if (rg) rg.textContent = currentLang === 'en' ? 'Reset ground' : 'Réinitialiser le sol';
   // Ground options
   const gsel = document.getElementById('ground-type-select');
   if (gsel) {

@@ -1815,3 +1815,120 @@ body.theme-light .tl {
   color: #000 !important;
   border-color: #000 !important;
 }
+
+/* ========== 2.1.8 fixes ========== */
+/* Close button = clear X */
+.tl-close {
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  border-radius: 3px !important;
+  position: relative !important;
+}
+.tl-close::before,
+.tl-close::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 9px !important;
+  height: 1.5px !important;
+  background: currentColor !important;
+  border-radius: 1px;
+}
+.tl-close::before { transform: translate(-50%, -50%) rotate(45deg) !important; }
+.tl-close::after { transform: translate(-50%, -50%) rotate(-45deg) !important; }
+/* hide text × if any */
+.tl-close { font-size: 0 !important; color: inherit !important; }
+.tl-close::after { opacity: 1 !important; }
+
+/* Language: ONLY active colored */
+.menu-subdropdown .lang-btn,
+.menu-dropdown .lang-btn {
+  color: inherit !important;
+  font-weight: 400 !important;
+  opacity: 0.9 !important;
+  background: transparent !important;
+}
+.menu-subdropdown .lang-btn.active,
+.menu-dropdown .lang-btn.active {
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+.menu-subdropdown .lang-btn:not(.active):hover,
+.menu-dropdown .lang-btn:not(.active):hover {
+  background: rgba(128,128,128,0.15) !important;
+  color: inherit !important;
+}
+body.theme-light .menu-subdropdown .lang-btn:not(.active),
+body.theme-light .menu-dropdown .lang-btn:not(.active) {
+  color: #000 !important;
+}
+body.theme-light .menu-subdropdown .lang-btn.active,
+body.theme-light .menu-dropdown .lang-btn.active {
+  color: #F54927 !important;
+}
+
+/* About links: neutral, not accent */
+.about-link,
+.about-link:link,
+.about-link:visited,
+.about-body a.about-link {
+  color: #e8eaed !important;
+  text-decoration: none !important;
+}
+.about-link .about-ico,
+.about-link svg {
+  color: #e8eaed !important;
+  stroke: #e8eaed !important;
+  fill: #e8eaed !important;
+}
+.about-link:hover {
+  text-decoration: underline !important;
+  opacity: 0.85 !important;
+}
+body.theme-light .about-link,
+body.theme-light .about-link:link,
+body.theme-light .about-link:visited,
+body.theme-light .about-body a.about-link {
+  color: #000 !important;
+}
+body.theme-light .about-link .about-ico,
+body.theme-light .about-link svg,
+body.theme-light .about-ico {
+  color: #000 !important;
+  stroke: #000 !important;
+  fill: #000 !important;
+}
+
+/* Light cards in light mode */
+body.theme-light .light-card {
+  background: #e8e8e8 !important;
+  color: #000 !important;
+  border: 1px solid #808080 !important;
+}
+body.theme-light .light-card-header {
+  color: #000 !important;
+}
+body.theme-light .light-card .control-row label,
+body.theme-light .light-card label {
+  color: #222 !important;
+}
+body.theme-light .light-card input,
+body.theme-light .light-card select {
+  color: #000 !important;
+  background: #fff !important;
+  border-color: #808080 !important;
+}
+body.theme-light .btn-collapse,
+body.theme-light .light-remove {
+  color: #000 !important;
+  background: #d0d0d0 !important;
+  border: 1px solid #808080 !important;
+}
+body.theme-light #ground-type-select,
+body.theme-light select {
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid #808080 !important;
+}
