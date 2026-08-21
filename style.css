@@ -1349,3 +1349,98 @@ body.theme-light .btn { background: #c0c0c0; color: #000; border: 1px solid #808
     display: block;
   }
 }
+
+/* === 2.1.3 statusbar + titlebar === */
+.menu-status { display: none !important; }
+
+.statusbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 26px;
+  padding: 4px 12px;
+  background: rgba(30, 32, 38, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 12px;
+  color: var(--muted, #9aa0a6);
+  pointer-events: none;
+}
+.statusbar .status-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statusbar .status-msg.is-error { color: #ef4444; }
+.statusbar .status-extra { flex-shrink: 0; opacity: 0.9; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+body.theme-light .statusbar {
+  background: #c0c0c0;
+  border-top: 1px solid #808080;
+  color: #000;
+}
+
+/* Titlebar: equal padding, buttons right order - + x */
+.side-titlebar {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 10px 12px !important;
+  min-height: 38px;
+  box-sizing: border-box;
+  gap: 8px;
+}
+.side-titlebar .side-title-text {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 96px);
+  text-align: center;
+  margin: 0;
+  line-height: 1.2;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.traffic-lights-right,
+.side-titlebar .traffic-lights {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 !important;
+  order: unset;
+}
+.tl {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tl-min { background: #f5c542; }
+.tl-max { background: #3ddc84; }
+.tl-close { background: #ff5f57; }
+.tl:hover { filter: brightness(1.15); box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+.tl.is-active { box-shadow: 0 0 0 2px var(--accent); }
+
+/* File menu foot items same padding as top links */
+.menu-dropdown .menu-foot-item > button,
+.menu-dropdown .menu-foot-item > .menu-hint-label {
+  padding: 6px 14px !important;
+}
+.menu-sep-foot {
+  margin: 4px 0 !important;
+}
+
+/* room for statusbar */
+#app { padding-bottom: 0; }
+.side-panel { max-height: calc(100vh - var(--menu-h, 40px) - 32px); }

@@ -13,8 +13,8 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 16:37 CEST  
-**Version :** 2.1.2
+**Dernière mise à jour :** 21 août 2026, 17:08 CEST
+**Version :** 2.1.3
 
 ---
 
@@ -41,6 +41,13 @@
 ---
 
 ## Historique des versions
+
+### 2.1.3 — 21 août 2026, 17:08 CEST
+- Barre d’état en bas (messages + info matériau) ; plus de statut dans le menu
+- Boutons fenêtre à droite dans l’ordre − + × ; marges barre de titre équilibrées
+- Traduction EN étendue (fenêtres, panneaux, boutons, à propos)
+- Marges alignées pour Aide / À propos / Langues dans Fichier
+- Date de mise à jour À propos
 
 ### 2.1.2 — 21 août 2026, 16:37 CEST
 - Correction menu mobile : se ferme au clic sur un lien ou en dehors

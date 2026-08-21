@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.2';
+const APP_VERSION = '2.1.3';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -500,8 +500,14 @@ const lightCountEl = document.getElementById('light-count');
 function setStatus(msg, isError = false) {
   if (!statusEl) return;
   statusEl.textContent = msg;
-  statusEl.style.color = isError ? '#ef4444' : '#9aa0a6';
+  statusEl.classList.toggle('is-error', !!isError);
+  statusEl.style.color = isError ? '#ef4444' : '';
 }
+function setStatusExtra(text) {
+  const el = document.getElementById('status-extra');
+  if (el) el.textContent = text || '';
+}
+
 
 function showLoader(text = 'Chargement…') {
   loaderText.textContent = text;
@@ -1010,6 +1016,15 @@ const sideTitle = document.getElementById('side-title');
 let lastPanelSection = { id: 'sec-props', title: 'Propriétés' };
 
 function showSection(id, title) {
+  // Localize common titles
+  if (currentLang === 'en') {
+    const tr = {
+      'Matériaux': 'Materials', 'Lumières': 'Lights', 'Sol': 'Ground',
+      'Propriétés': 'Properties', 'Propriétés du fichier': 'File properties', 'Panneau': 'Panel',
+    };
+    if (tr[title]) title = tr[title];
+  }
+
   sidePanel.classList.remove('hidden-ui');
   sidePanel.classList.remove('minimized');
   document.querySelectorAll('.side-section').forEach((s) => s.classList.add('hidden'));
@@ -2270,6 +2285,8 @@ function loadMaterialToUI(index) {
     hdr.textContent = entry.label;
     hdr.title = entry.label;
   }
+  setStatusExtra((currentLang === 'en' ? 'Material: ' : 'Matériau : ') + entry.label);
+
   const m = entry.material;
   const colorEl = document.getElementById('mat-color');
   if (colorEl && m.color) {
@@ -2756,7 +2773,7 @@ const aboutModal = document.getElementById('about-modal');
 const aboutVer = document.getElementById('about-version');
 const aboutUpd = document.getElementById('about-updated');
 if (aboutVer) aboutVer.textContent = APP_VERSION;
-if (aboutUpd) aboutUpd.textContent = APP_UPDATED;
+if (aboutUpd) aboutUpd.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'August 21, 2026' : '21 août 2026';
 
 document.getElementById('about-close')?.addEventListener('click', () => {
   aboutModal?.classList.add('hidden');
@@ -2920,13 +2937,166 @@ const MENU_I18N = {
   },
 };
 let currentLang = 'fr';
+const UI_I18N = {
+  fr: {
+    ready: 'Prêt',
+    panel: 'Panneau',
+    materials: 'Matériaux',
+    lights: 'Lumières',
+    ground: 'Sol',
+    file_props: 'Propriétés du fichier',
+    load_file: 'Charger un fichier',
+    about: 'À propos — 3D Viewer',
+    help: 'Aide — 3D Viewer',
+    selection: 'Sélection',
+    colors: 'Couleurs',
+    color: 'Couleur',
+    properties: 'Propriétés',
+    texture_scales: 'Texture & échelles',
+    type: 'Type',
+    apply_mat: 'Appliquer au matériau sélectionné',
+    apply_all: 'Appliquer à tous',
+    reset_mats: "Réinitialiser matériaux d'origine",
+    no_model: 'Aucun modèle chargé.',
+    no_model_opt: '— aucun modèle —',
+    version: 'Version',
+    created: 'Date de création',
+    updated: 'Dernière mise à jour',
+    author: 'Auteur',
+    desc: '3D Viewer permet de visualiser vos fichiers 3D.',
+    updated_date: '21 août 2026',
+    created_date: '19 août 2026',
+  },
+  en: {
+    ready: 'Ready',
+    panel: 'Panel',
+    materials: 'Materials',
+    lights: 'Lights',
+    ground: 'Ground',
+    file_props: 'File properties',
+    load_file: 'Open file',
+    about: 'About — 3D Viewer',
+    help: 'Help — 3D Viewer',
+    selection: 'Selection',
+    colors: 'Colors',
+    color: 'Color',
+    properties: 'Properties',
+    texture_scales: 'Texture & scales',
+    type: 'Type',
+    apply_mat: 'Apply to selected material',
+    apply_all: 'Apply to all',
+    reset_mats: 'Reset original materials',
+    no_model: 'No model loaded.',
+    no_model_opt: '— no model —',
+    version: 'Version',
+    created: 'Created',
+    updated: 'Last updated',
+    author: 'Author',
+    desc: '3D Viewer lets you view your 3D files.',
+    updated_date: 'August 21, 2026',
+    created_date: 'August 19, 2026',
+  },
+};
+
+function applyUITranslations() {
+  const t = UI_I18N[currentLang] || UI_I18N.fr;
+  const mapLabel = (selector, text) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      if (!el.dataset.i18nKeep) el.textContent = text;
+    });
+  };
+  // Panel section titles
+  const secMap = {
+    'sec-mats': t.materials,
+    'sec-lights': t.lights,
+    'sec-ground': t.ground,
+    'sec-props': t.file_props,
+  };
+  Object.entries(secMap).forEach(([id, title]) => {
+    const h = document.querySelector('#' + id + ' > h3');
+    if (h) h.textContent = title;
+  });
+  // Mat groups
+  document.querySelectorAll('.mat-group-colors .mat-group-title').forEach((el) => { el.textContent = t.colors; });
+  document.querySelectorAll('.mat-group-props .mat-group-title').forEach((el) => { el.textContent = t.properties; });
+  document.querySelectorAll('.mat-group-tex .mat-group-title').forEach((el) => { el.textContent = t.texture_scales; });
+  // Common labels by for/id proximity
+  const labelPairs = [
+    ['#mat-select', t.selection],
+    ['#mat-color', t.color],
+    ['#ground-type-select', t.type],
+    ['#ground-color', t.color],
+  ];
+  labelPairs.forEach(([sel, text]) => {
+    const el = document.querySelector(sel);
+    const lab = el?.closest('.control-row')?.querySelector('label');
+    if (lab) lab.textContent = text;
+  });
+  const btnApply = document.getElementById('btn-apply-mat');
+  if (btnApply) btnApply.textContent = t.apply_mat;
+  const btnAll = document.getElementById('btn-apply-mat-all');
+  if (btnAll) btnAll.textContent = t.apply_all;
+  const btnReset = document.getElementById('btn-reset-mats');
+  if (btnReset) btnReset.textContent = t.reset_mats;
+  const opt = document.querySelector('#mat-select option[value=""]');
+  if (opt) opt.textContent = t.no_model_opt;
+  // About
+  const aboutH = document.querySelector('#about-modal h2');
+  if (aboutH) aboutH.textContent = t.about;
+  const helpH = document.querySelector('#help-modal h2');
+  if (helpH) helpH.textContent = t.help;
+  document.querySelectorAll('.about-desc').forEach((el) => { el.textContent = t.desc; });
+  const aboutUpd = document.getElementById('about-updated');
+  if (aboutUpd) aboutUpd.textContent = t.updated_date;
+  // Translate strong labels in about
+  document.querySelectorAll('#about-modal .about-body p').forEach((p) => {
+    const strong = p.querySelector('strong');
+    if (!strong) return;
+    const key = strong.textContent.replace(/\s*:?\s*$/, '').trim();
+    const dict = {
+      'Version': t.version, 'Date de création': t.created, 'Created': t.created,
+      'Dernière mise à jour': t.updated, 'Last updated': t.updated,
+      'Auteur': t.author, 'Author': t.author,
+    };
+    if (dict[key]) strong.textContent = dict[key];
+  });
+  // Load window title
+  document.querySelectorAll('#load-window .side-title-text').forEach((el) => { el.textContent = t.load_file; });
+  // Side title if default
+  const st = document.getElementById('side-title');
+  if (st && (st.textContent === 'Panneau' || st.textContent === 'Panel')) st.textContent = t.panel;
+  // Status ready if still default
+  if (statusEl && (statusEl.textContent === 'Prêt' || statusEl.textContent === 'Ready')) {
+    setStatus(t.ready);
+  }
+  // Buttons clear tex
+  const clr = document.getElementById('btn-clear-tex');
+  if (clr) clr.textContent = currentLang === 'en' ? 'Remove' : 'Retirer';
+  // Ground options
+  const gsel = document.getElementById('ground-type-select');
+  if (gsel) {
+    const map = currentLang === 'en'
+      ? { grid: 'Grid', plane: 'Flat surface', none: 'None' }
+      : { grid: 'Quadrillage', plane: 'Surface plate', none: 'Aucun' };
+    [...gsel.options].forEach((o) => { if (map[o.value]) o.textContent = map[o.value]; });
+  }
+  // Context menu
+  const ctx = {
+    'frame-object': currentLang === 'en' ? 'Frame object' : "Centrer la vue sur l'objet",
+    'frame-mouse': currentLang === 'en' ? 'Frame under pointer' : 'Centrer la vue sur le pointeur',
+  };
+  document.querySelectorAll('#ctx-menu button[data-act]').forEach((b) => {
+    if (ctx[b.dataset.act] && !b.querySelector('[data-ctx]')) b.textContent = ctx[b.dataset.act];
+  });
+}
+
 function setLanguage(lang) {
   currentLang = lang === 'en' ? 'en' : 'fr';
   document.documentElement.lang = currentLang;
   document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === currentLang));
   const dict = MENU_I18N[currentLang] || MENU_I18N.fr;
   document.querySelectorAll('.menu-label, .menu-dropdown button, .menu-hint-label, .ground-btn').forEach((el) => {
-    if (el.querySelector('.dyn-label')) return; // handled separately
+    if (el.querySelector('.dyn-label')) return;
     if (el.id && el.id.startsWith('lang-')) return;
     if (el.classList.contains('ground-btn')) {
       const g = el.dataset.ground;
@@ -2936,20 +3106,17 @@ function setLanguage(lang) {
       if (map[g]) el.textContent = map[g];
       return;
     }
-    // Translate by walking text nodes after svg
     const nodes = [...el.childNodes];
     nodes.forEach((n) => {
       if (n.nodeType === 3) {
         const raw = n.textContent.trim();
         if (!raw) return;
-        // keep original in data-i18n-src
         if (!el.dataset.i18nSrc) el.dataset.i18nSrc = raw;
         const src = el.dataset.i18nSrc;
         if (dict[src]) n.textContent = ' ' + dict[src];
-        else if (MENU_I18N.fr[src] && currentLang === 'fr') n.textContent = ' ' + src;
+        else if (currentLang === 'fr' && MENU_I18N.fr[src]) n.textContent = ' ' + src;
       }
     });
-    // menu-label: same
     if (el.classList.contains('menu-label') || el.classList.contains('menu-hint-label')) {
       const txt = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ');
       if (!el.dataset.i18nSrc && txt) el.dataset.i18nSrc = txt;
@@ -2960,6 +3127,11 @@ function setLanguage(lang) {
       }
     }
   });
+  // Expand MENU_I18N missing keys for light adds etc.
+  const extraEn = {
+    '+ Ambient': '+ Ambient', '+ Directional': '+ Directional', '+ Point': '+ Point', '+ Spot': '+ Spot',
+  };
+  applyUITranslations();
   updateDynamicMenuLabels?.();
   try { localStorage.setItem('3dviewer_lang', currentLang); } catch (_) {}
   setStatus(currentLang === 'en' ? 'Language: English' : 'Langue : Français');
