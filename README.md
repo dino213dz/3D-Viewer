@@ -13,8 +13,8 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 17:08 CEST
-**Version :** 2.1.3
+**Dernière mise à jour :** 21 août 2026, 17:20 CEST
+**Version :** 2.1.4
 
 ---
 
@@ -41,6 +41,11 @@
 ---
 
 ## Historique des versions
+
+### 2.1.4 — 21 août 2026, 17:20 CEST
+- Langue par défaut : **English** ; préférence sauvegardée (localStorage)
+- Fix critique : crash TDZ sur `currentLang` qui empêchait le chargement de `modele.glb`
+- Chargement du modèle par défaut rétabli (URL absolue + microtask)
 
 ### 2.1.3 — 21 août 2026, 17:08 CEST
 - Barre d’état en bas (messages + info matériau) ; plus de statut dans le menu

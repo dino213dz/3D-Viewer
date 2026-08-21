@@ -6,7 +6,12 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.3';
+const APP_VERSION = '2.1.4';
+let currentLang = 'en';
+try {
+  const savedLang = localStorage.getItem('3dviewer_lang');
+  if (savedLang === 'fr' || savedLang === 'en') currentLang = savedLang;
+} catch (_) {}
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -2773,7 +2778,7 @@ const aboutModal = document.getElementById('about-modal');
 const aboutVer = document.getElementById('about-version');
 const aboutUpd = document.getElementById('about-updated');
 if (aboutVer) aboutVer.textContent = APP_VERSION;
-if (aboutUpd) aboutUpd.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'August 21, 2026' : '21 août 2026';
+if (aboutUpd) aboutUpd.textContent = currentLang === 'en' ? 'August 21, 2026' : '21 août 2026';
 
 document.getElementById('about-close')?.addEventListener('click', () => {
   aboutModal?.classList.add('hidden');
@@ -2784,10 +2789,11 @@ aboutModal?.addEventListener('click', (e) => {
 
 
 // Modèle par défaut : modele.glb — aucune fenêtre ouverte au départ
-showLoader('Chargement du modèle par défaut…');
-{
+function bootDefaultModel() {
+  const msg = currentLang === 'en' ? 'Loading default model…' : 'Chargement du modèle par défaut…';
+  showLoader(msg);
   const k = fileKeyFromMeta('modele.glb', 0);
-  switchHistoryToFile(k);
+  try { switchHistoryToFile(k); } catch (_) {}
   currentFileKey = k;
   currentFileName = 'modele.glb';
   currentFileSize = 0;
@@ -2795,35 +2801,48 @@ showLoader('Chargement du modèle par défaut…');
     const len = r.headers.get('content-length');
     if (len) currentFileSize = parseInt(len, 10) || 0;
   }).catch(() => {});
-}
-gltfLoader.load(
-  'modele.glb',
-  (gltf) => {
-    try {
-      currentModel = prepareModel(gltf.scene);
-      captureOriginalMaterials(currentModel);
-      scene.add(currentModel);
-      fitCameraToObject(currentModel);
-      refreshMaterialSelect();
-      refreshFileProps();
-      restorePrefsAfterLoad();
-      setStatus('Modèle par défaut chargé.');
-    } catch (err) {
-      console.error(err);
-      setStatus('Erreur préparation modèle par défaut', true);
+
+  const url = new URL('modele.glb', window.location.href).href;
+  gltfLoader.load(
+    url,
+    (gltf) => {
+      try {
+        if (currentModel) {
+          scene.remove(currentModel);
+          currentModel = null;
+        }
+        currentModel = prepareModel(gltf.scene);
+        if (typeof captureOriginalMaterials === 'function') captureOriginalMaterials(currentModel);
+        scene.add(currentModel);
+        fitCameraToObject(currentModel);
+        refreshMaterialSelect();
+        if (typeof refreshFileProps === 'function') refreshFileProps();
+        if (typeof restorePrefsAfterLoad === 'function') restorePrefsAfterLoad();
+        setStatus(currentLang === 'en' ? 'Default model loaded.' : 'Modèle par défaut chargé.');
+      } catch (err) {
+        console.error('prepareModel failed', err);
+        setStatus(currentLang === 'en' ? 'Error preparing default model' : 'Erreur préparation modèle par défaut', true);
+      }
+      hideLoader();
+    },
+    undefined,
+    (err) => {
+      console.error('gltf load failed', err);
+      hideLoader();
+      setStatus(currentLang === 'en'
+        ? 'Could not load modele.glb'
+        : 'Impossible de charger modele.glb — placez le fichier à côté de index.html', true);
     }
-    hideLoader();
-  },
-  undefined,
-  (err) => {
-    console.error(err);
-    hideLoader();
-    setStatus('Impossible de charger modele.glb — placez le fichier à côté de index.html', true);
-  }
-);
+  );
+}
+// Load after a tick so all const/lets in module are initialized
+queueMicrotask(() => bootDefaultModel());
 
 function loadDefaultModel() {
-  showLoader('Chargement du modèle par défaut…');
+  bootDefaultModel();
+}
+function loadDefaultModel_legacy_unused() {
+  showLoader(currentLang === 'en' ? 'Loading default model…' : 'Chargement du modèle par défaut…');
   const k = fileKeyFromMeta('modele.glb', 0);
   switchHistoryToFile(k);
   currentFileKey = k;
@@ -2831,7 +2850,7 @@ function loadDefaultModel() {
   currentFileSize = 0;
   clearModel();
   gltfLoader.load(
-    'modele.glb',
+    new URL('modele.glb', window.location.href).href,
     (gltf) => {
       try {
         currentModel = prepareModel(gltf.scene);
@@ -2936,7 +2955,6 @@ const MENU_I18N = {
     'Modifier le sol': 'Edit ground',
   },
 };
-let currentLang = 'fr';
 const UI_I18N = {
   fr: {
     ready: 'Prêt',
@@ -3138,10 +3156,12 @@ function setLanguage(lang) {
 }
 document.getElementById('lang-fr')?.addEventListener('click', () => setLanguage('fr'));
 document.getElementById('lang-en')?.addEventListener('click', () => setLanguage('en'));
+// Apply language at startup (default English, or saved preference)
 try {
-  const l = localStorage.getItem('3dviewer_lang');
-  if (l) setLanguage(l);
-} catch (_) {}
+  setLanguage(currentLang);
+} catch (e) {
+  console.error('setLanguage init', e);
+}
 
 document.getElementById('brand-about')?.addEventListener('click', (e) => {
   e.preventDefault();
