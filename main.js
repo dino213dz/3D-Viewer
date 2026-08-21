@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.2.2';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -1075,7 +1075,7 @@ function fitCameraToVisibleArea(object) {
   setStatus(currentLang === 'en' ? 'Framed to visible area.' : 'Cadré sur la zone visible.');
 }
 
-function doFrameVisiblefunction doFrameVisible() {
+function doFrameVisible() {
   if (currentModel) {
     // s'assurer du layout panneau avant mesure
     layoutFloatingWindows();
