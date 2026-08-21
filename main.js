@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.1.5';
+const APP_VERSION = '2.1.6';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -3167,7 +3167,11 @@ function applyUITranslations() {
 function setLanguage(lang) {
   currentLang = lang === 'en' ? 'en' : 'fr';
   document.documentElement.lang = currentLang;
-  document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === currentLang));
+  document.querySelectorAll('.lang-btn').forEach((b) => {
+    const on = b.dataset.lang === currentLang;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-current', on ? 'true' : 'false');
+  });
   const dict = MENU_I18N[currentLang] || MENU_I18N.fr;
   document.querySelectorAll('.menu-label, .menu-dropdown button, .menu-hint-label, .ground-btn').forEach((el) => {
     if (el.querySelector('.dyn-label')) return;
@@ -3207,6 +3211,12 @@ function setLanguage(lang) {
   };
   applyUITranslations();
   updateDynamicMenuLabels?.();
+  // refresh version status label language
+  const vs = document.getElementById('about-version-status');
+  if (vs) {
+    if (vs.classList.contains('is-update')) setVersionStatus('update');
+    else if (vs.classList.contains('is-ok')) setVersionStatus('ok');
+  }
   try { localStorage.setItem('3dviewer_lang', currentLang); } catch (_) {}
   setStatus(currentLang === 'en' ? 'Language: English' : 'Langue : Français');
 }
@@ -3323,8 +3333,24 @@ function isNewer(remote, local) {
   }
   return false;
 }
+function setVersionStatus(kind) {
+  // kind: 'ok' | 'update' | 'unknown'
+  const el = document.getElementById('about-version-status');
+  if (!el) return;
+  el.className = 'version-status';
+  if (kind === 'update') {
+    el.classList.add('is-update');
+    el.innerHTML = currentLang === 'en'
+      ? '(<a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">Update</a>)'
+      : '(<a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">Mettre à jour</a>)';
+  } else if (kind === 'ok') {
+    el.classList.add('is-ok');
+    el.textContent = currentLang === 'en' ? '(Up to date)' : '(Version à jour)';
+  } else {
+    el.textContent = '';
+  }
+}
 async function checkGitHubVersion() {
-  const badge = document.getElementById('about-update-badge');
   const urls = [
     'https://raw.githubusercontent.com/dino213dz/3D-Viewer/main/README.md',
     'https://cdn.jsdelivr.net/gh/dino213dz/3D-Viewer@main/README.md',
@@ -3336,15 +3362,12 @@ async function checkGitHubVersion() {
       if (r.ok) { text = await r.text(); break; }
     } catch (_) {}
   }
-  if (!text) return;
+  if (!text) { setVersionStatus('unknown'); return; }
   const line = text.split('\n').find((l) => /^\*\*Version\s*:\*\*/i.test(l.trim()) || /^Version\s*:/i.test(l.trim()));
-  if (!line) return;
+  if (!line) { setVersionStatus('unknown'); return; }
   const remote = parseVersion(line);
   const local = parseVersion(APP_VERSION);
-  if (isNewer(remote, local) && badge) {
-    badge.classList.remove('hidden');
-    badge.textContent = (currentLang === 'en') ? 'Update available!' : 'MAJ disponible !';
-    badge.href = 'https://github.com/dino213dz/3D-Viewer';
-  }
+  if (isNewer(remote, local)) setVersionStatus('update');
+  else setVersionStatus('ok');
 }
 queueMicrotask(() => { checkGitHubVersion().catch(() => {}); });

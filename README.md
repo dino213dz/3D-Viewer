@@ -13,9 +13,9 @@
 **Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 18:06 CEST  
+**Dernière mise à jour :** 21 août 2026, 18:25 CEST  
 
-**Version :** 2.1.5
+**Version :** 2.1.6
 
 ---
 
@@ -44,6 +44,13 @@
 ---
 
 ## Historique des versions
+
+### 2.1.6 — 21 août 2026, 18:25 CEST
+- Mode clair : fenêtre À propos adaptée (plus sombre)
+- Boutons fenêtre correctement à droite
+- Surbrillance mode clair en orange `#F54927`
+- À propos : « (Version à jour) » vert ou « (Mettre à jour) » rouge + lien GitHub
+- Langue active seule en surbrillance dans le menu
 
 ### 2.1.5 — 21 août 2026, 18:06 CEST
 - Fenêtre Ouvrir : un seul bouton fermer, aligné à droite
