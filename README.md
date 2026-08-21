@@ -1,99 +1,108 @@
+<p align="center">
+  <img src="logo.png" alt="3D Viewer" width="96" height="96" />
+</p>
+
 # 3D Viewer
 
-Visualiseur 3D web pour modèles **FBX / glTF / GLB / ZIP**.
+## Description
 
-| | |
-|---|---|
-| **Version** | 2.0.3 |
-| **Création** | 19 août 2026 |
-| **Dernière MAJ** | 20 août 2026 |
-| **Auteur** | CHORFA Allaeddine |
-| **Site** | [chorfa.fr](https://chorfa.fr) |
-| **Contact** | [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr) |
-| **GitHub** | [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer) |
+3D Viewer permet de visualiser vos fichiers 3D.
 
-Archive de déploiement : **`3DViewer_203.zip`**
+**Auteur :** CHORFA Allaeddine  
+**Site :** [chorfa.fr](https://chorfa.fr)  
+**Contact :** [webmaster@chorfa.fr](mailto:webmaster@chorfa.fr)  
+**GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
+**Création :** 19 août 2026  
+**Dernière mise à jour :** 21 août 2026, 15:30 CEST  
+**Version :** 2.1.0
 
 ---
 
-## Fonctionnalités (v2.0.3)
+## Fonctionnalités de 3D Viewer
 
-- Menu style macOS + barre d’outils (Matériaux, Lumières, Annuler, Refaire, Cadrer)
-- Chargement FBX / GLB / GLTF / ZIP (menu Fichier)
-- Matériaux triés **alphabétiquement** et numérotés (`1-Nom`, `2-Nom`…)
-- **Clic sur l’objet** → bulle avec le nom du matériau + sélection dans l’éditeur
-- Lumières, wireframe, cadrage, zone visible, auto-scale
-- Annuler / Refaire (historique par fichier)
-- Panneaux flottants, accent `#6761FF`
-- Propriétés du fichier, préférences auto
-- À propos : logo GitHub **dino213dz**
+### Fonctionnalités globales
+- Menu, barre d’outils et panneau flottant
+- Annuler / Refaire infini (historique par fichier)
+- Compatible FBX / GLB / GLTF / ZIP (contenant les formats précédents)
+- Modification de matériaux
+- Clic sur l’objet → bulle nom du matériau + sélection dans l’éditeur de matériaux
+- Ajout et paramétrage des lumières
+- Wireframe, cadrage auto, propriétés du fichier, sauvegarde des modifications (matériaux)
+
+### Autres
+- Double-clic sur un élément pour le cadrer
+- Gizmo d’axes (X rouge, Y vert, Z bleu)
+- Sol : quadrillage, surface plate ou aucun
+- Affichage clair / sombre
+- Langues : Français, English
+- Rotation des lumières, cônes masquables, lumières renommables et repliables
 
 ---
 
 ## Historique des versions
 
-### 2.0.3 *(majeure)*
-- Icônes barre actives : **bleu accent** (plus de vert)
-- Matériaux : ordre alphabétique + numérotation `N-Nom`
-- Clic 3D → bulle nom du matériau
-- Logo **dino213dz** dans la fenêtre À propos
+### 2.1.0 — 21 août 2026, 15:30 CEST
+- Textures GLB : conservation et colorSpace corrects (map, normal, roughness, etc.)
+- Langues FR / EN (Menu → Fichier → Langues)
+- Sous-menus sur une ligne avec troncature « … » + infobulle
+- Fichiers renommés : `modele.glb`, `logo.png`
+- À propos : logo, description, auteurs, liens
+- Propriétés du fichier dans Fichier (+ taille)
+- Aide et À propos sous Fichier ; fenêtre Aide dédiée
+- Gizmo avec labels X/Y/Z
+- Suppression « Appliquer à tout le modèle » du menu Éditer
+- Lumières : réduire, renommer, masquer les cônes
+- « 3D Viewer » à droite de la barre ; séparateurs menu / icônes
+- Fenêtre ouverture : déplaçable, un seul bouton fermer
+- Affichage clair (Vue)
+- Recharger le modèle par défaut
+- « Panneau flottant » (ex. panneau latéral)
+- Nom matériau tronqué + en-tête
+- Sol : quadrillage / surface / aucun
+- Double-clic cadrage élément
+- Ascenseurs sombres ; cadres dans le panneau matériaux
+- Boutons fenêtre espacés ; barre de titre affinée
 
-### 1.7.9
-- README historique complet
-- Bulles tooltips barre de menu
-- Liens visités corrigés ; vert réservé aux fenêtres actives (remplacé en 2.0.3 par bleu)
+### 2.0.3 — 20 août 2026
+- Gizmo dans menu Vue
+- Sélecteurs de couleur synchronisés avec la valeur courante
 
-### 1.7.8
-- Toggle Matériaux / Lumières
-- Icônes globe / mail / GitHub dans À propos
+### 2.0.2 — 20 août 2026
+- Réinitialiser couleur du ciel
+- Afficher / masquer les gizmo
+- Matériaux regroupés par nom
 
-### 1.7.7
-- Lien GitHub ; raccourcis barre Matériaux / Lumières
+### 2.0.1 — 20 août 2026
+- Fermeture des sous-menus au clic barre
+- Rotation des lumières X/Y/Z
+- Gizmo d’axes
+- Couleur du ciel
 
-### 1.7.6
-- Un seul sous-menu ouvert à la fois
+### 2.0.0 — 20 août 2026 *(majeure)*
+- Icônes actives en bleu accent
+- Matériaux alphabétiques numérotés
+- Clic 3D → bulle matériau
+- Logo dans À propos
 
-### 1.7.5
-- Raccourcis clavier dans Aide ; accent `#6761FF`
-- Propriétés du fichier ; panneau non vide
+### 1.7.9 – 1.7.0 — 20 août 2026
+- Tooltips barre, undo par fichier, cadrage zone visible, redo, hex couleurs, icônes SVG
 
-### 1.7.4
-- Historique Annuler/Refaire par fichier
+### 1.6.x — 19–20 août 2026
+- Menu Éditer, annuler illimité, glass UI 66 %, chargement menu-only, 4x4/modele, auteur
 
-### 1.7.3
-- Cadrage zone visible corrigé
-
-### 1.7.2
-- Layout paysage / portrait ; cadrage zone visible
-
-### 1.7.1
-- Fix 2e application matériau ; Redo ; couleurs perso + hex
-
-### 1.7.0
-- Icônes SVG ; échelle texture ; recadrage barre
-
-### 1.6.9 – 1.6.0
-- Stabilisation menus, glass UI, chargement menu-only, 4x4.glb, auteur
-
-### 1.5.x – 1.0
+### 1.5.x – 1.0 — 19 août 2026
 - Premières versions (Car3D Tester → 3D Viewer)
 
 ---
 
-## Déploiement
+## Formats supportés
 
-1. Télécharger **`3DViewer_203.zip`**
-2. Déposer sur Netlify Drop
-3. Vider le cache navigateur
-
-## Local
-
-```bash
-python3 -m http.server 8080
-```
-
-Fichiers : `index.html`, `main.js`, `style.css`, `4x4.glb`, `logo-dino213dz.png`
+| Extension | Notes |
+|-----------|--------|
+| `.glb` / `.gltf` | glTF 2.0 (textures embarquées) |
+| `.fbx` | FBXLoader |
+| `.zip` | Archive FBX/glTF + textures |
 
 ---
 
-© 2026 CHORFA Allaeddine — [chorfa.fr](https://chorfa.fr) — [GitHub](https://github.com/dino213dz/3D-Viewer)
+© 2026 CHORFA Allaeddine — [chorfa.fr](https://chorfa.fr)

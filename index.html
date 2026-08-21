@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" id="html-root">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -22,7 +22,6 @@
 
     <!-- Menu barre style macOS -->
     <nav id="menubar">
-      <div class="menu-brand">3D Viewer</div>
       <button type="button" id="menu-burger" class="menu-burger" aria-label="Menu" title="Menu">
         <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       </button>
@@ -30,15 +29,28 @@
         <li class="menu-item">
           <button type="button" class="menu-label"><svg class="ico" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 2v3h3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Fichier</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-open"><svg class="ico" viewBox="0 0 16 16"><path d="M2 4h5l1 2h6v7H2V4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Charger un fichier…</button></li>
-            <li><button type="button" id="menu-clear"><svg class="ico" viewBox="0 0 16 16"><path d="M3 5h10M6 5V3h4v2M5 5l.5 9h5L11 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Effacer le modèle</button></li>
+            <li><button type="button" id="menu-open" title="Charger un fichier…"><svg class="ico" viewBox="0 0 16 16"><path d="M2 4h5l1 2h6v7H2V4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Charger un fichier…</button></li>
+            <li><button type="button" id="menu-clear" title="Effacer le modèle"><svg class="ico" viewBox="0 0 16 16"><path d="M3 5h10M6 5V3h4v2M5 5l.5 9h5L11 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Effacer le modèle</button></li>
+            <li><button type="button" id="menu-reload-default" title="Recharger le modèle par défaut"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Recharger le modèle par défaut</button></li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-file-props" title="Propriétés du fichier"><svg class="ico" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 2v3h3M5 8h6M5 11h4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Propriétés du fichier</button></li>
+            <li class="sep"></li>
+            <li class="menu-item-sub"><span class="menu-hint-label"><svg class="ico" viewBox="0 0 16 16"><path d="M3 3h10v10H3z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 8h4M8 6v4" stroke="currentColor" stroke-width="1.2"/></svg> Langues</span>
+              <ul class="menu-subdropdown">
+                <li><button type="button" id="lang-fr" class="lang-btn active" data-lang="fr">Français</button></li>
+                <li><button type="button" id="lang-en" class="lang-btn" data-lang="en">English</button></li>
+              </ul>
+            </li>
+            <li class="sep"></li>
+            <li><button type="button" id="menu-help" title="Aide"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.2 6.2a2 2 0 113.2 1.6c-.6.5-1.2 1-1.2 2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="0.9" fill="currentColor"/></svg> Aide</button></li>
+            <li><button type="button" id="menu-about" title="À propos"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> À propos</button></li>
           </ul>
         </li>
         <li class="menu-item">
           <button type="button" class="menu-label"><svg class="ico" viewBox="0 0 16 16"><path d="M3 12l7-7 2 2-7 7H3v-2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M9 4l2 2" stroke="currentColor" stroke-width="1.2"/></svg> Éditer</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-undo"><svg class="ico" viewBox="0 0 16 16"><path d="M4 7h6a3 3 0 010 6H7" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4 7l2.5-2.5M4 7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Annuler</button></li>
-            <li><button type="button" id="menu-redo"><svg class="ico" viewBox="0 0 16 16"><path d="M12 7H6a3 3 0 000 6h3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M12 7l-2.5-2.5M12 7l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Refaire</button></li>
+            <li><button type="button" id="menu-undo" title="Annuler"><svg class="ico" viewBox="0 0 16 16"><path d="M4 7h6a3 3 0 010 6H7" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4 7l2.5-2.5M4 7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Annuler</button></li>
+            <li><button type="button" id="menu-redo" title="Refaire"><svg class="ico" viewBox="0 0 16 16"><path d="M12 7H6a3 3 0 000 6h3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M12 7l-2.5-2.5M12 7l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Refaire</button></li>
             <li class="sep"></li>
             <li class="menu-sky-row">
               <label class="menu-sky-label" for="menu-sky-color">
@@ -47,48 +59,38 @@
               </label>
               <input type="color" id="menu-sky-color" value="#1a1d24" title="Couleur de l'arrière-plan" />
             </li>
-            <li><button type="button" id="menu-reset-sky"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Réinitialiser couleur du ciel</button></li>
+            <li><button type="button" id="menu-reset-sky" title="Réinitialiser couleur du ciel"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Réinitialiser couleur du ciel</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-show-mats"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg> Éditeur de matériaux</button></li>
-            <li><button type="button" id="menu-apply-all"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Appliquer à tout le modèle</button></li>
-            <li><button type="button" id="menu-reset-mats"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Réinitialiser matériaux d'origine</button></li>
+            <li><button type="button" id="menu-show-mats" title="Éditeur de matériaux"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg> Éditeur de matériaux</button></li>
+            <li><button type="button" id="menu-reset-mats" title="Réinitialiser matériaux d'origine"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Réinitialiser matériaux d'origine</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-show-lights"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> Lumières</button></li>
-            <li><button type="button" id="menu-add-ambient"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Ambient</button></li>
-            <li><button type="button" id="menu-add-directional"><svg class="ico" viewBox="0 0 16 16"><path d="M2 8h9M9 5l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> + Directional</button></li>
-            <li><button type="button" id="menu-add-point"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".6"/></svg> + Point</button></li>
-            <li><button type="button" id="menu-add-spot"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2l5 12H3L8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Spot</button></li>
+            <li><button type="button" id="menu-show-lights" title="Lumières"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> Lumières</button></li>
+            <li><button type="button" id="menu-add-ambient" title="+ Ambient"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Ambient</button></li>
+            <li><button type="button" id="menu-add-directional" title="+ Directional"><svg class="ico" viewBox="0 0 16 16"><path d="M2 8h9M9 5l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> + Directional</button></li>
+            <li><button type="button" id="menu-add-point" title="+ Point"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".6"/></svg> + Point</button></li>
+            <li><button type="button" id="menu-add-spot" title="+ Spot"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2l5 12H3L8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> + Spot</button></li>
+            <li><button type="button" id="menu-toggle-helpers" title="Afficher / masquer les cônes de lumière"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2l5 12H3L8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Afficher / masquer les cônes de lumière</button></li>
           </ul>
         </li>
         <li class="menu-item">
           <button type="button" class="menu-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Vue</button>
           <ul class="menu-dropdown">
-            <li><button type="button" id="menu-frame"><svg class="ico" viewBox="0 0 16 16"><path d="M2 5V2h3M11 2h3v3M14 11v3h-3M5 14H2v-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Cadrer l'objet</button></li>
-            <li><button type="button" id="menu-frame-visible"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 5h3v6h-3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg> Cadrer zone visible</button></li>
+            <li><button type="button" id="menu-frame" title="Cadrer l'objet"><svg class="ico" viewBox="0 0 16 16"><path d="M2 5V2h3M11 2h3v3M14 11v3h-3M5 14H2v-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Cadrer l'objet</button></li>
+            <li><button type="button" id="menu-frame-visible" title="Cadrer zone visible"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 5h3v6h-3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg> Cadrer zone visible</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-wireframe"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12L8 2l6 10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 12l3-5 3 5M8 2v5" stroke="currentColor" stroke-width="1"/></svg> Wireframe</button></li>
-            <li><button type="button" id="menu-toggle-gizmo"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3"/><path d="M8 2l2 2M8 2L6 4M14 8l-2-2M14 8l-2 2" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> Afficher / masquer les gizmo</button></li>
+            <li><button type="button" id="menu-wireframe" title="Wireframe"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12L8 2l6 10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 12l3-5 3 5M8 2v5" stroke="currentColor" stroke-width="1"/></svg> Wireframe</button></li>
+            <li><button type="button" id="menu-toggle-gizmo" title="Afficher / masquer les gizmo"><svg class="ico" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3"/><path d="M8 2l2 2M8 2L6 4M14 8l-2-2M14 8l-2 2" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> Afficher / masquer les gizmo</button></li>
+            <li><button type="button" id="menu-toggle-panel" title="Panneau flottant"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 3v10" stroke="currentColor" stroke-width="1.2"/></svg> Panneau flottant</button></li>
             <li class="sep"></li>
-            <li><button type="button" id="menu-file-props"><svg class="ico" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 2v3h3M5 8h6M5 11h4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Afficher les propriétés du fichier</button></li>
-            <li><button type="button" id="menu-toggle-panel"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 3v10" stroke="currentColor" stroke-width="1.2"/></svg> Panneau latéral</button></li>
+            <li class="menu-item-sub"><span class="menu-hint-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 12h12M4 12V6l4-3 4 3v6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Sol</span>
+              <ul class="menu-subdropdown">
+                <li><button type="button" id="ground-grid" class="ground-btn" data-ground="grid">Quadrillage</button></li>
+                <li><button type="button" id="ground-plane" class="ground-btn" data-ground="plane">Surface plate</button></li>
+                <li><button type="button" id="ground-none" class="ground-btn" data-ground="none">Aucun</button></li>
+              </ul>
+            </li>
+            <li><button type="button" id="menu-theme-light" title="Affichage clair"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg> Affichage clair</button></li>
           </ul>
-        </li>
-        <li class="menu-item">
-          <button type="button" class="menu-label"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.2 6.2a2 2 0 113.2 1.6c-.6.5-1.2 1-1.2 2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="0.9" fill="currentColor"/></svg> Aide</button>
-          <ul class="menu-dropdown menu-dropdown-wide">
-            <li class="menu-hint">Souris : orbit / zoom / pan</li>
-            <li class="menu-hint">Tactile : 1 doigt orbit, 2 doigts zoom</li>
-            <li class="sep"></li>
-            <li class="menu-hint"><strong>Raccourcis clavier</strong></li>
-            <li class="menu-hint">Ctrl/Cmd + Z — Annuler</li>
-            <li class="menu-hint">Ctrl/Cmd + Y — Refaire</li>
-            <li class="menu-hint">Ctrl/Cmd + Shift + Z — Refaire</li>
-            <li class="sep"></li>
-            <li class="menu-hint">Formats : FBX, GLB, GLTF, ZIP</li>
-          </ul>
-        </li>
-        <li class="menu-item">
-          <button type="button" class="menu-label" id="menu-about"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> À propos</button>
         </li>
       </ul>
       <div class="menu-right">
@@ -99,6 +101,7 @@
         <button type="button" id="toolbar-frame-visible" class="toolbar-btn" data-tip="Cadrer zone visible" title="Cadrer zone visible" aria-label="Zone visible">
           <svg class="ico" viewBox="0 0 16 16"><path d="M2 3h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M11 5h3v6h-3" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12.5" cy="8" r="1.3" fill="currentColor"/></svg>
         </button>
+        <span class="toolbar-sep" aria-hidden="true"></span>
         <button type="button" id="toolbar-undo" class="toolbar-btn" data-tip="Annuler (Ctrl+Z)" title="Annuler (Ctrl+Z)" aria-label="Annuler">
           <svg class="ico" viewBox="0 0 16 16"><path d="M4 7h6a3 3 0 010 6H7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 7l2.5-2.5M4 7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         </button>
@@ -110,8 +113,9 @@
           <svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
         </button>
         <button type="button" id="toolbar-lights" class="toolbar-btn" data-tip="Lumières" title="Lumières" aria-label="Lumières">
-          <svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/></svg>
+          <svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/></svg>
         </button>
+        <div class="menu-brand">3D Viewer</div>
       </div>
     </nav>
 
@@ -126,7 +130,7 @@
           <button type="button" id="side-max" class="tl tl-max" title="Agrandir" aria-label="Agrandir"></button>
         </div>
         <span id="side-title" class="side-title-text">Panneau</span>
-        <button type="button" id="side-close-x" class="win-close-x" title="Fermer" aria-label="Fermer">×</button>
+        <span class="win-close-spacer" aria-hidden="true"></span>
       </div>
 
       <!-- Propriétés fichier -->
@@ -140,6 +144,7 @@
       <!-- Matériaux -->
       <section class="side-section hidden" id="sec-mats">
         <h3>Matériaux</h3>
+        <div id="mat-name-header" class="mat-name-header" title="">—</div>
         <div class="control-row">
           <label>Sélection</label>
           <select id="mat-select">
@@ -147,6 +152,8 @@
           </select>
         </div>
         <div class="controls" id="mat-controls">
+        <div class="mat-group mat-group-colors">
+          <div class="mat-group-title">Couleurs</div>
           <div class="control-row">
             <label>Couleur</label>
             <input type="color" id="mat-color" value="#cccccc" />
@@ -157,6 +164,9 @@
             <div id="custom-colors" class="custom-colors"></div>
             <button type="button" id="btn-save-color" class="btn small secondary" style="width:auto;margin:0;">Enregistrer</button>
           </div>
+        </div>
+        <div class="mat-group mat-group-props">
+          <div class="mat-group-title">Propriétés</div>
           <div class="control-row">
             <label>Metalness</label>
             <input type="range" id="mat-metal" min="0" max="1" step="0.01" value="0.2" />
@@ -190,6 +200,9 @@
             <input type="range" id="mat-emissive-int" min="0" max="5" step="0.05" value="0" />
             <span id="val-emissive-int">0.00</span>
           </div>
+        </div>
+        <div class="mat-group mat-group-tex">
+          <div class="mat-group-title">Texture & échelles</div>
           <div class="control-row" style="flex-wrap:wrap;gap:6px;">
             <label style="min-width:100%">Texture</label>
             <input type="file" id="mat-texture" accept="image/*" />
@@ -210,6 +223,7 @@
             <input type="range" id="mat-tex-sz" min="0.05" max="20" step="0.05" value="1" />
             <span id="val-tex-sz">1.00</span>
           </div>
+        </div>
         </div>
         <button type="button" id="btn-apply-mat" class="btn" style="margin-top:10px">Appliquer au matériau sélectionné</button>
         <button type="button" id="btn-apply-mat-all" class="btn secondary" style="margin-top:6px">Appliquer à tous</button>
@@ -257,6 +271,35 @@
       </div>
     </div>
 
+    <!-- Modal Aide -->
+    <div id="help-modal" class="modal hidden">
+      <div class="modal-content">
+        <button type="button" class="modal-close" id="help-close">×</button>
+        <h2>Aide — 3D Viewer</h2>
+        <div class="about-body" id="help-body">
+          <p><strong>Raccourcis clavier</strong></p>
+          <ul class="help-list">
+            <li>Ctrl/Cmd + Z — Annuler</li>
+            <li>Ctrl/Cmd + Y — Refaire</li>
+            <li>Ctrl/Cmd + Shift + Z — Refaire</li>
+          </ul>
+          <p><strong>Navigation</strong></p>
+          <ul class="help-list">
+            <li>Souris : orbit / zoom / pan</li>
+            <li>Tactile : 1 doigt orbit, 2 doigts zoom</li>
+            <li>Double-clic sur un élément : zoomer et cadrer</li>
+          </ul>
+          <p><strong>Formats compatibles</strong></p>
+          <ul class="help-list">
+            <li>.glb / .gltf — glTF 2.0</li>
+            <li>.fbx — FBX</li>
+            <li>.zip — archive contenant FBX/glTF + textures</li>
+          </ul>
+          <p><a class="about-link" href="https://github.com/dino213dz/3D-Viewer/blob/main/README.md" target="_blank" rel="noopener">README.md sur GitHub</a></p>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal À propos -->
     <div id="about-modal" class="modal hidden">
       <div class="modal-content">
@@ -264,14 +307,15 @@
         <h2>À propos — 3D Viewer</h2>
         <div class="about-body">
           <div class="about-logo-wrap">
-            <img src="logo-dino213dz.png" alt="Logo dino213dz" class="about-logo" width="96" height="96" />
+            <img src="logo.png" alt="Logo 3D Viewer" class="about-logo" width="96" height="96" />
           </div>
-          <p><strong>Version</strong> : <span id="about-version">2.0.3</span></p>
+          <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
+          <hr />
+          <p><strong>Version</strong> : <span id="about-version">2.1.0</span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
-          <p><strong>Dernière mise à jour</strong> : <span id="about-updated">20 août 2026</span></p>
+          <p><strong>Dernière mise à jour</strong> : <span id="about-updated">21 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
           <hr />
-          <p>Visualiseur 3D web pour modèles FBX / glTF / ZIP, lumières et matériaux.</p>
           <p class="about-links">
             <a class="about-link" href="https://chorfa.fr" target="_blank" rel="noopener">
               <svg class="ico about-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2 8h12M8 2c-2.2 2.2-3.2 4.2-3.2 6S5.8 11.8 8 14c2.2-2.2 3.2-4.2 3.2-6S10.2 4.2 8 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>

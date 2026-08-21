@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.0.3';
+const APP_VERSION = '2.1.0';
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
 const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros modèles
@@ -14,6 +14,8 @@ const TARGET_MODEL_SIZE = 4; // taille max (unités) pour auto-scale des gros mo
 // ===== Sauvegarde auto (matériaux + vue) par fichier =====
 const PREFS_PREFIX = '3dviewer_prefs_v1:';
 let currentFileKey = null;
+let currentFileSize = 0;
+let currentFileName = "";
 let saveTimer = null;
 
 function fileKeyFromMeta(name, size) {
@@ -171,6 +173,27 @@ const axesScene = new THREE.Scene();
 const axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 10);
 const axesGizmo = new THREE.AxesHelper(1.2);
 axesScene.add(axesGizmo);
+function makeAxisLabel(text, color, pos) {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 64, 64);
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText(text, 32, 34);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false });
+  const spr = new THREE.Sprite(mat);
+  spr.position.copy(pos);
+  spr.scale.set(0.45, 0.45, 0.45);
+  return spr;
+}
+axesScene.add(makeAxisLabel('X', '#ff4444', new THREE.Vector3(1.35, 0, 0)));
+axesScene.add(makeAxisLabel('Y', '#44ff66', new THREE.Vector3(0, 1.35, 0)));
+axesScene.add(makeAxisLabel('Z', '#4488ff', new THREE.Vector3(0, 0, 1.35)));
+
 // Axes dans la scène (origine)
 const sceneAxes = new THREE.AxesHelper(1.5);
 sceneAxes.name = 'sceneAxes';
@@ -181,6 +204,35 @@ renderer.autoClear = false;
 // Ground grid + plane for shadows
 const grid = new THREE.GridHelper(80, 80, 0x333844, 0x22252e);
 scene.add(grid);
+const groundPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 80),
+  new THREE.MeshStandardMaterial({ color: 0x2a2d36, roughness: 0.9, metalness: 0.05 })
+);
+groundPlane.rotation.x = -Math.PI / 2;
+groundPlane.position.y = -0.01;
+groundPlane.receiveShadow = true;
+groundPlane.visible = false;
+scene.add(groundPlane);
+
+let groundMode = 'grid'; // grid | plane | none
+function setGroundMode(mode) {
+  groundMode = mode || 'grid';
+  grid.visible = groundMode === 'grid';
+  groundPlane.visible = groundMode === 'plane';
+  document.querySelectorAll('.ground-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.ground === groundMode);
+  });
+  try { localStorage.setItem('3dviewer_ground', groundMode); } catch (_) {}
+  setStatus(groundMode === 'grid' ? 'Sol : quadrillage' : groundMode === 'plane' ? 'Sol : surface plate' : 'Sol : aucun');
+}
+document.getElementById('ground-grid')?.addEventListener('click', () => setGroundMode('grid'));
+document.getElementById('ground-plane')?.addEventListener('click', () => setGroundMode('plane'));
+document.getElementById('ground-none')?.addEventListener('click', () => setGroundMode('none'));
+try {
+  const gm = localStorage.getItem('3dviewer_ground');
+  if (gm) setGroundMode(gm);
+} catch (_) {}
+
 
 const groundGeo = new THREE.PlaneGeometry(80, 80);
 const groundMat = new THREE.ShadowMaterial({ opacity: 0.3 });
@@ -580,32 +632,59 @@ function fitCameraToObject(object) {
   repositionLightsForModel(object);
 }
 
+function fixTextureColorSpace(tex, isColorMap = true) {
+  if (!tex) return;
+  if (isColorMap) tex.colorSpace = THREE.SRGBColorSpace;
+  else tex.colorSpace = THREE.NoColorSpace || THREE.LinearSRGBColorSpace || tex.colorSpace;
+  tex.needsUpdate = true;
+}
+
 function prepareModel(object) {
   object.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
+      child.frustumCulled = true;
 
       if (child.material) {
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         const newMats = mats.map((m) => {
-          // Convertir MeshBasicMaterial (non éclairé) en Standard pour que les lumières fonctionnent
+          // Conserver toutes les textures (map, normal, roughness, metalness, ao, emissive…)
+          const applyMaps = (target) => {
+            if (m.map) { target.map = m.map; fixTextureColorSpace(target.map, true); }
+            if (m.normalMap) { target.normalMap = m.normalMap; fixTextureColorSpace(target.normalMap, false); }
+            if (m.roughnessMap) { target.roughnessMap = m.roughnessMap; fixTextureColorSpace(target.roughnessMap, false); }
+            if (m.metalnessMap) { target.metalnessMap = m.metalnessMap; fixTextureColorSpace(target.metalnessMap, false); }
+            if (m.aoMap) { target.aoMap = m.aoMap; fixTextureColorSpace(target.aoMap, false); }
+            if (m.emissiveMap) { target.emissiveMap = m.emissiveMap; fixTextureColorSpace(target.emissiveMap, true); }
+            if (m.bumpMap) target.bumpMap = m.bumpMap;
+            if (m.displacementMap) target.displacementMap = m.displacementMap;
+            if (m.alphaMap) target.alphaMap = m.alphaMap;
+          };
+
           if (m.isMeshBasicMaterial) {
             const std = new THREE.MeshStandardMaterial({
-              color: m.color,
-              map: m.map,
+              color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
               transparent: m.transparent,
               opacity: m.opacity,
               side: THREE.FrontSide,
               metalness: 0.2,
               roughness: 0.6,
+              name: m.name || '',
             });
-            if (std.map) std.map.colorSpace = THREE.SRGBColorSpace;
+            applyMaps(std);
+            std.needsUpdate = true;
             return std;
           }
-          if (m.map) m.map.colorSpace = THREE.SRGBColorSpace;
-          m.side = THREE.FrontSide;
-          // Assurer que le matériau réagit bien à la lumière
+
+          // glTF Standard / Physical : ne pas remplacer, seulement corriger colorSpace
+          if (m.map) fixTextureColorSpace(m.map, true);
+          if (m.normalMap) fixTextureColorSpace(m.normalMap, false);
+          if (m.roughnessMap) fixTextureColorSpace(m.roughnessMap, false);
+          if (m.metalnessMap) fixTextureColorSpace(m.metalnessMap, false);
+          if (m.aoMap) fixTextureColorSpace(m.aoMap, false);
+          if (m.emissiveMap) fixTextureColorSpace(m.emissiveMap, true);
+          m.side = m.side ?? THREE.FrontSide;
           if (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) {
             if (m.metalness === undefined) m.metalness = 0.2;
             if (m.roughness === undefined) m.roughness = 0.55;
@@ -1003,9 +1082,10 @@ function refreshFileProps() {
   });
   const box = new THREE.Box3().setFromObject(currentModel);
   const size = box.getSize(new THREE.Vector3());
-  const name = (currentFileKey || '').replace(/^3dviewer_prefs_v1:/, '').split('::')[0] || '—';
+  const name = currentFileName || (currentFileKey || '').replace(/^3dviewer_prefs_v1:/, '').split('::')[0] || '—';
   const rows = [
     ['Nom', name],
+    ['Taille', formatBytes(currentFileSize)],
     ['Meshes', String(meshes)],
     ['Vertices', Math.round(verts).toLocaleString('fr-FR')],
     ['Triangles (approx.)', Math.round(tris).toLocaleString('fr-FR')],
@@ -1024,7 +1104,6 @@ function showFilePropsPanel() {
   showSection('sec-props', 'Propriétés');
 }
 document.getElementById('side-close')?.addEventListener('click', closeSidePanel);
-document.getElementById('side-close-x')?.addEventListener('click', closeSidePanel);
 
 // Maximize / restore window
 let panelPrevRect = null;
@@ -1169,7 +1248,6 @@ function closeLoadWindow() {
   const w = document.getElementById('load-window');
   if (w) w.classList.add('hidden');
 }
-document.getElementById('load-close')?.addEventListener('click', closeLoadWindow);
 document.getElementById('load-close-x')?.addEventListener('click', closeLoadWindow);
 document.getElementById('load-browse-btn')?.addEventListener('click', () => fileInput?.click());
 
@@ -1330,6 +1408,18 @@ document.getElementById('menu-reset-sky')?.addEventListener('click', () => {
   setStatus('Couleur du ciel réinitialisée.');
 });
 
+let lightHelpersVisible = true;
+function setLightHelpersVisible(vis) {
+  lightHelpersVisible = !!vis;
+  lights.forEach((e) => {
+    if (e.helper) e.helper.visible = lightHelpersVisible;
+  });
+  setStatus(lightHelpersVisible ? 'Cônes de lumière affichés.' : 'Cônes de lumière masqués.');
+}
+document.getElementById('menu-toggle-helpers')?.addEventListener('click', () => {
+  setLightHelpersVisible(!lightHelpersVisible);
+});
+
 let gizmosVisible = true;
 function setGizmosVisible(vis) {
   gizmosVisible = !!vis;
@@ -1341,6 +1431,16 @@ function setGizmosVisible(vis) {
 document.getElementById('menu-toggle-gizmo')?.addEventListener('click', () => {
   setGizmosVisible(!gizmosVisible);
 });
+document.getElementById('menu-theme-light')?.addEventListener('click', () => {
+  document.body.classList.toggle('theme-light');
+  const on = document.body.classList.contains('theme-light');
+  try { localStorage.setItem('3dviewer_theme', on ? 'light' : 'dark'); } catch (_) {}
+  setStatus(on ? 'Affichage clair' : 'Affichage sombre');
+});
+try {
+  if (localStorage.getItem('3dviewer_theme') === 'light') document.body.classList.add('theme-light');
+} catch (_) {}
+
 try {
   const savedSky = localStorage.getItem('3dviewer_sky_color');
   if (savedSky) setSkyColor(savedSky);
@@ -1408,6 +1508,7 @@ function createLightHelper(light, type) {
     helper = new THREE.SpotLightHelper(light);
   }
   if (helper) {
+    helper.visible = (typeof lightHelpersVisible === 'undefined') ? true : lightHelpersVisible;
     scene.add(helper);
     // Petite sphère visible pour repérer facilement la position de la lumière
     if (type !== 'AmbientLight') {
@@ -1548,12 +1649,15 @@ function buildLightCard(entry) {
   const shortType = type.replace('Light', '');
   const isAmbient = type === 'AmbientLight';
 
+  const lightName = entry.name || (shortType + ' #' + id);
+  entry.name = lightName;
   let html = `
     <div class="light-card-header">
-      <strong>${shortType} #${id}</strong>
+      <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+      <strong class="light-name" contenteditable="true" spellcheck="false" title="Cliquer pour renommer">${lightName}</strong>
       <button class="btn-remove" title="Supprimer">×</button>
     </div>
-    <div class="controls">
+    <div class="controls light-card-body">
       <div class="control-row">
         <label>Couleur</label>
         <input type="color" class="ctrl-color" value="#${light.color.getHexString()}" />
@@ -1652,6 +1756,22 @@ function buildLightCard(entry) {
   })();
 
   card.querySelector('.btn-remove').addEventListener('click', () => removeLight(id));
+  const collapseBtn = card.querySelector('.btn-collapse');
+  const body = card.querySelector('.light-card-body');
+  collapseBtn?.addEventListener('click', () => {
+    const collapsed = card.classList.toggle('collapsed');
+    collapseBtn.textContent = collapsed ? '+' : '−';
+    if (body) body.style.display = collapsed ? 'none' : '';
+  });
+  const nameEl = card.querySelector('.light-name');
+  nameEl?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+  });
+  nameEl?.addEventListener('blur', () => {
+    const n = (nameEl.textContent || '').trim() || lightName;
+    nameEl.textContent = n;
+    entry.name = n;
+  });
 
   const colorInput = card.querySelector('.ctrl-color');
   colorInput.addEventListener('pointerdown', pushLightModUndo);
@@ -2047,6 +2167,11 @@ function getSelectedMaterialEntry() {
 function loadMaterialToUI(index) {
   const entry = materialEntries[index];
   if (!entry) return;
+  const hdr = document.getElementById('mat-name-header');
+  if (hdr) {
+    hdr.textContent = entry.label;
+    hdr.title = entry.label;
+  }
   const m = entry.material;
   const colorEl = document.getElementById('mat-color');
   if (colorEl && m.color) {
@@ -2311,6 +2436,20 @@ canvas.addEventListener('pointerup', (e) => {
   if (Math.hypot(dx, dy) > 6) return; // drag → pas un clic
   onCanvasPointerClick(e);
 });
+canvas.addEventListener('dblclick', (e) => {
+  if (!currentModel) return;
+  const rect = canvas.getBoundingClientRect();
+  pickPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  pickRaycaster.setFromCamera(pickPointer, camera);
+  const hits = pickRaycaster.intersectObject(currentModel, true);
+  if (!hits.length) return;
+  const mesh = hits[0].object;
+  if (!mesh) return;
+  fitCameraToObject(mesh);
+  setStatus('Élément cadré : ' + (mesh.name || 'mesh'));
+});
+
 
 
 document.getElementById('mat-select')?.addEventListener('change', (e) => {
@@ -2514,15 +2653,21 @@ aboutModal?.addEventListener('click', (e) => {
 });
 
 
-// Modèle par défaut : 4x4.glb — aucune fenêtre ouverte au départ
-showLoader('Chargement du modèle 4x4…');
+// Modèle par défaut : modele.glb — aucune fenêtre ouverte au départ
+showLoader('Chargement du modèle par défaut…');
 {
-  const k = fileKeyFromMeta('4x4.glb', 0);
+  const k = fileKeyFromMeta('modele.glb', 0);
   switchHistoryToFile(k);
   currentFileKey = k;
+  currentFileName = 'modele.glb';
+  currentFileSize = 0;
+  fetch('modele.glb', { method: 'HEAD' }).then((r) => {
+    const len = r.headers.get('content-length');
+    if (len) currentFileSize = parseInt(len, 10) || 0;
+  }).catch(() => {});
 }
 gltfLoader.load(
-  '4x4.glb',
+  'modele.glb',
   (gltf) => {
     try {
       currentModel = prepareModel(gltf.scene);
@@ -2532,10 +2677,10 @@ gltfLoader.load(
       refreshMaterialSelect();
       refreshFileProps();
       restorePrefsAfterLoad();
-      setStatus('Modèle 4x4 chargé.');
+      setStatus('Modèle par défaut chargé.');
     } catch (err) {
       console.error(err);
-      setStatus('Erreur préparation modèle 4x4', true);
+      setStatus('Erreur préparation modèle par défaut', true);
     }
     hideLoader();
   },
@@ -2543,6 +2688,97 @@ gltfLoader.load(
   (err) => {
     console.error(err);
     hideLoader();
-    setStatus('Impossible de charger 4x4.glb — placez le fichier à côté de index.html', true);
+    setStatus('Impossible de charger modele.glb — placez le fichier à côté de index.html', true);
   }
 );
+
+function loadDefaultModel() {
+  showLoader('Chargement du modèle par défaut…');
+  const k = fileKeyFromMeta('modele.glb', 0);
+  switchHistoryToFile(k);
+  currentFileKey = k;
+  currentFileName = 'modele.glb';
+  currentFileSize = 0;
+  clearModel();
+  gltfLoader.load(
+    'modele.glb',
+    (gltf) => {
+      try {
+        currentModel = prepareModel(gltf.scene);
+        scene.add(currentModel);
+        fitCameraToObject(currentModel);
+        refreshMaterialSelect();
+        refreshFileProps();
+        restorePrefsAfterLoad();
+        setStatus('Modèle par défaut chargé.');
+      } catch (err) {
+        console.error(err);
+        setStatus('Erreur préparation modèle par défaut', true);
+      }
+      hideLoader();
+    },
+    undefined,
+    (err) => {
+      console.error(err);
+      hideLoader();
+      setStatus('Impossible de charger modele.glb', true);
+    }
+  );
+}
+document.getElementById('menu-reload-default')?.addEventListener('click', loadDefaultModel);
+document.getElementById('menu-help')?.addEventListener('click', () => {
+  document.getElementById('help-modal')?.classList.remove('hidden');
+});
+document.getElementById('help-close')?.addEventListener('click', () => {
+  document.getElementById('help-modal')?.classList.add('hidden');
+});
+
+(function makeLoadWindowDraggable() {
+  const win = document.getElementById('load-window');
+  if (!win) return;
+  const bar = win.querySelector('.side-titlebar') || win.querySelector('.floating-window-inner > div');
+  const inner = win.querySelector('.floating-window-inner');
+  if (!inner) return;
+  let dragging = false, ox = 0, oy = 0;
+  const title = win.querySelector('.side-title-text')?.parentElement || inner.firstElementChild;
+  if (!title) return;
+  title.style.cursor = 'move';
+  title.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    dragging = true;
+    const r = inner.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    inner.style.position = 'fixed';
+    inner.style.margin = '0';
+    try { title.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  title.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    inner.style.left = Math.max(0, e.clientX - ox) + 'px';
+    inner.style.top = Math.max(0, e.clientY - oy) + 'px';
+  });
+  title.addEventListener('pointerup', (e) => {
+    dragging = false;
+    try { title.releasePointerCapture(e.pointerId); } catch (_) {}
+  });
+})();
+
+const I18N = {
+  fr: { ready: 'Prêt', file: 'Fichier', edit: 'Éditer', view: 'Vue' },
+  en: { ready: 'Ready', file: 'File', edit: 'Edit', view: 'View' },
+};
+let currentLang = 'fr';
+function setLanguage(lang) {
+  currentLang = lang === 'en' ? 'en' : 'fr';
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === currentLang));
+  try { localStorage.setItem('3dviewer_lang', currentLang); } catch (_) {}
+  setStatus(currentLang === 'en' ? 'Language: English' : 'Langue : Français');
+}
+document.getElementById('lang-fr')?.addEventListener('click', () => setLanguage('fr'));
+document.getElementById('lang-en')?.addEventListener('click', () => setLanguage('en'));
+try {
+  const l = localStorage.getItem('3dviewer_lang');
+  if (l) setLanguage(l);
+} catch (_) {}
