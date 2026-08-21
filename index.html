@@ -154,10 +154,6 @@
       <!-- Matériaux -->
       <section class="side-section hidden" id="sec-mats">
         <h3>Matériaux</h3>
-        <div class="mat-section-toolbar">
-          <button type="button" id="btn-mats-collapse-all" class="btn small secondary mat-section-btn" title="Tout réduire">− sections</button>
-          <button type="button" id="btn-mats-expand-all" class="btn small secondary mat-section-btn" title="Tout développer">+ sections</button>
-        </div>
         <div id="mat-name-header" class="mat-name-header" title="">—</div>
         <div class="control-row">
           <label>Sélection</label>
@@ -173,20 +169,31 @@
         </div>
         <div class="controls" id="mat-controls">
         <div class="mat-group mat-group-colors">
-          <button type="button" class="mat-group-title mat-group-toggle" data-mat-group="colors" aria-expanded="true"><span class="mat-group-label">Couleurs</span><span class="mat-group-chevron" aria-hidden="true">−</span></button>
-          <div class="control-row">
-            <label>Couleur</label>
-            <input type="color" id="mat-color" value="#cccccc" />
-            <input type="text" id="mat-color-hex" class="hex-input" value="#cccccc" maxlength="7" spellcheck="false" title="Code hex" />
+          <div class="mat-group-header mat-group-toggle" data-mat-group="colors" role="button" tabindex="0" aria-expanded="true">
+            <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+            <strong class="mat-group-label">Couleurs</strong>
           </div>
-          <div class="control-row" style="flex-wrap:wrap;align-items:center;gap:6px;">
-            <label style="min-width:100%">Couleurs enregistrées</label>
-            <div id="custom-colors" class="custom-colors"></div>
-            <button type="button" id="btn-save-color" class="btn small secondary" style="width:auto;margin:0;">Enregistrer</button>
+          <div class="mat-group-body">
+            <div class="control-row">
+              <label>Couleur</label>
+              <input type="color" id="mat-color" value="#cccccc" />
+              <input type="text" id="mat-color-hex" class="hex-input" value="#cccccc" maxlength="7" spellcheck="false" title="Code hex" />
+            </div>
+            <div class="control-row" style="flex-wrap:wrap;align-items:center;gap:6px;">
+              <label style="min-width:100%">Couleurs enregistrées</label>
+              <div id="custom-colors" class="custom-colors"></div>
+            </div>
+            <div class="mat-save-color-row">
+              <button type="button" id="btn-save-color" class="btn small secondary">Enregistrer</button>
+            </div>
           </div>
         </div>
         <div class="mat-group mat-group-props">
-          <button type="button" class="mat-group-title mat-group-toggle" data-mat-group="props" aria-expanded="true"><span class="mat-group-label">Propriétés</span><span class="mat-group-chevron" aria-hidden="true">−</span></button>
+          <div class="mat-group-header mat-group-toggle" data-mat-group="props" role="button" tabindex="0" aria-expanded="true">
+            <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+            <strong class="mat-group-label">Propriétés</strong>
+          </div>
+          <div class="mat-group-body">
           <div class="control-row">
             <label>Metalness</label>
             <input type="range" id="mat-metal" min="0" max="1" step="0.01" value="0.2" />
@@ -221,8 +228,14 @@
             <span id="val-emissive-int">0.00</span>
           </div>
         </div>
+          </div>
+        </div>
         <div class="mat-group mat-group-tex">
-          <button type="button" class="mat-group-title mat-group-toggle" data-mat-group="tex" aria-expanded="true"><span class="mat-group-label">Texture & échelles</span><span class="mat-group-chevron" aria-hidden="true">−</span></button>
+          <div class="mat-group-header mat-group-toggle" data-mat-group="tex" role="button" tabindex="0" aria-expanded="true">
+            <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+            <strong class="mat-group-label">Texture & échelles</strong>
+          </div>
+          <div class="mat-group-body">
           <div class="control-row" style="flex-wrap:wrap;gap:6px;">
             <label style="min-width:100%">Texture</label>
             <input type="file" id="mat-texture" accept="image/*" />
@@ -243,11 +256,14 @@
             <input type="range" id="mat-tex-sz" min="0.05" max="20" step="0.05" value="1" />
             <span id="val-tex-sz">1.00</span>
           </div>
+          </div>
         </div>
         </div>
-        <button type="button" id="btn-apply-mat" class="btn" style="margin-top:10px">Appliquer au matériau sélectionné</button>
-        <button type="button" id="btn-apply-mat-all" class="btn secondary" style="margin-top:6px">Appliquer à tous</button>
-        <button type="button" id="btn-reset-mats" class="btn secondary" style="margin-top:6px">Réinitialiser matériaux d'origine</button>
+        <div class="mat-actions">
+          <button type="button" id="btn-apply-mat" class="btn compact">Appliquer</button>
+          <button type="button" id="btn-apply-mat-all" class="btn secondary compact">Appliquer à tout</button>
+          <button type="button" id="btn-reset-mats" class="btn secondary compact">Réinitialiser</button>
+        </div>
       </section>
 
       <!-- Sol -->
@@ -367,7 +383,7 @@
           </div>
           <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.2.4</span> <span id="about-version-status" class="version-status"></span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.2.5</span> <span id="about-version-status" class="version-status"></span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">21 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
@@ -382,7 +398,7 @@
               webmaster@chorfa.fr
             </a>
             <a class="about-link" href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">
-              <svg class="ico about-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 2.9 1.9 5.3 4.5 6.2.3.1.4-.1.4-.3v-1.1c-1.8.4-2.2-.8-2.2-.8-.3-.7-.7-.9-.7-.9-.6-.4.1-.4.1-.4.6.1 1 .7 1 .7.6 1 1.5.7 1.9.5.1-.4.2-.7.4-.9-1.5-.2-3-0.7-3-3.2 0-.7.3-1.3.7-1.8-.1-.2-.3-.9.1-1.8 0 0 .6-.2 1.9.7.5-.1 1.1-.2 1.7-.2s1.2.1 1.7.2c1.3-.9 1.9-.7 1.9-.7.4.9.2 1.6.1 1.8.4.5.7 1.1.7 1.8 0 2.5-1.6 3-3.1 3.2.2.4.5.6.5 1.2v1.8c0 .2.2.4.4.3 2.6-.9 4.5-3.3 4.5-6.2C14.5 4.4 11.6 1.5 8 1.5z"/></svg>
+              <svg class="ico about-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 2.9 1.9 5.3 4.5 6.2.3.1.4-.1.4-.3v-1.1c-1.8.4-2.2-.8-2.2-.8-.3-.7-.7-.9-.7-.9-.6-.4.1-.4.1-.4.6.1 1 .7 1 .7.6 1 1.5.7 1.9.5.1-.4.2-.7.4-.9-1.5-.2-3-0.7-3-3.2 0-.7.3-1.3.7-1.8-.1-.2-.3-.9.1-1.8 0 0 .6-.2 1.9.7.5-.1 1.1-.2 1.7-.2s1.2.1 1.7.2c1.3-.9 1.9-.7 1.9-.7.4.9.2 1.6.1 1.8.4.5.7 1.1.7 1.8 0 2.5-1.6 3-3.1 3.2.2.5.5.6.5 1.2v1.8c0 .2.2.5.4.3 2.6-.9 4.5-3.3 4.5-6.2C14.5 4.4 11.6 1.5 8 1.5z"/></svg>
               GitHub — dino213dz/3D-Viewer
             </a>
           </p>

@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 21 août 2026, 23:38 CEST  
+**Dernière mise à jour :** 21 août 2026, 23:54 CEST  
 
-**Version :** 2.2.4
+**Version :** 2.2.5
 
 ---
 
@@ -45,6 +45,12 @@
 ---
 
 ## Historique des versions
+
+### 2.2.5 — 21 août 2026, 23:54 CEST
+- Matériaux : bouton −/+ au niveau du titre de section (comme les lumières)
+- Bouton Enregistrer (couleur) en bas à droite de la section
+- Boutons compacts : Appliquer / Appliquer à tout / Réinitialiser
+- Appui long sur une couleur enregistrée pour la supprimer
 
 ### 2.2.4 — 21 août 2026, 23:38 CEST
 - Matériaux : boutons − sections / + sections (tout réduire / tout développer)

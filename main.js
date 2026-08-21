@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.4';
+const APP_VERSION = '2.2.5';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -2925,20 +2925,32 @@ function renderCustomColors() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'swatch';
-    b.title = hex + ' (clic = utiliser, dbl-clic = supprimer)';
+    b.title = hex + ' — clic : utiliser · appui long : supprimer';
     b.style.background = hex;
-    b.addEventListener('click', () => {
+    let longTimer = null;
+    let longFired = false;
+    const clearLong = () => { if (longTimer) { clearTimeout(longTimer); longTimer = null; } };
+    const removeColor = () => {
+      longFired = true;
+      const next = loadCustomColors().filter((x) => x !== hex);
+      saveCustomColors(next);
+      renderCustomColors();
+      setStatus((currentLang === 'en' ? 'Color removed: ' : 'Couleur retirée : ') + hex);
+    };
+    b.addEventListener('pointerdown', (e) => {
+      longFired = false;
+      clearLong();
+      longTimer = setTimeout(removeColor, 550);
+    });
+    b.addEventListener('pointerup', clearLong);
+    b.addEventListener('pointerleave', clearLong);
+    b.addEventListener('pointercancel', clearLong);
+    b.addEventListener('click', (e) => {
+      if (longFired) { e.preventDefault(); e.stopPropagation(); return; }
       const c = document.getElementById('mat-color');
       const h = document.getElementById('mat-color-hex');
       if (c) c.value = hex;
       if (h) h.value = hex;
-    });
-    b.addEventListener('dblclick', (e) => {
-      e.preventDefault();
-      const next = loadCustomColors().filter((x) => x !== hex);
-      saveCustomColors(next);
-      renderCustomColors();
-      setStatus('Couleur retirée : ' + hex);
     });
     box.appendChild(b);
   });
@@ -3566,18 +3578,20 @@ document.getElementById('titlebar-apply-mat')?.addEventListener('click', (e) => 
   applyMaterialsFromUI(false);
 });
 
-// Réduire/déplier groupes matériaux (− à droite / + pour rouvrir)
+// Réduire/déplier groupes matériaux (comme les lumières)
 document.getElementById('sec-mats')?.addEventListener('click', (e) => {
-  const btn = e.target.closest?.('.mat-group-toggle');
-  if (!btn || !document.getElementById('sec-mats').contains(btn)) return;
+  const header = e.target.closest?.('.mat-group-header, .mat-group-toggle');
+  if (!header || !document.getElementById('sec-mats').contains(header)) return;
+  // clic sur contenu interne hors header ne collaps pas
+  if (!e.target.closest('.mat-group-header') && !e.target.classList.contains('btn-collapse')) return;
   e.preventDefault();
   e.stopPropagation();
-  const group = btn.closest('.mat-group');
+  const group = header.closest('.mat-group');
   if (!group) return;
   const collapsed = group.classList.toggle('collapsed');
-  btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-  const chev = btn.querySelector('.mat-group-chevron');
-  if (chev) chev.textContent = collapsed ? '+' : '−';
+  header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  const col = group.querySelector('.btn-collapse');
+  if (col) col.textContent = collapsed ? '+' : '−';
 });
 
 // Afficher bouton Appliquer titre uniquement sur section matériaux
@@ -3596,25 +3610,3 @@ document.getElementById('sec-mats')?.addEventListener('click', (e) => {
   sync();
 })();
 
-document.getElementById('btn-mats-collapse-all')?.addEventListener('click', () => {
-  document.querySelectorAll('#sec-mats .mat-group').forEach((g) => {
-    g.classList.add('collapsed');
-    const btn = g.querySelector('.mat-group-toggle');
-    if (btn) {
-      btn.setAttribute('aria-expanded', 'false');
-      const chev = btn.querySelector('.mat-group-chevron');
-      if (chev) chev.textContent = '+';
-    }
-  });
-});
-document.getElementById('btn-mats-expand-all')?.addEventListener('click', () => {
-  document.querySelectorAll('#sec-mats .mat-group').forEach((g) => {
-    g.classList.remove('collapsed');
-    const btn = g.querySelector('.mat-group-toggle');
-    if (btn) {
-      btn.setAttribute('aria-expanded', 'true');
-      const chev = btn.querySelector('.mat-group-chevron');
-      if (chev) chev.textContent = '−';
-    }
-  });
-});
