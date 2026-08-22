@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 22 août 2026, 16:30 CEST  
+**Dernière mise à jour :** 22 août 2026, 17:15 CEST  
 
-**Version :** 2.3.2
+**Version :** 2.3.3
 
 ---
 
@@ -47,6 +47,9 @@
 ---
 
 ## Historique des versions
+
+### 2.3.3 — 22 août 2026, 17:15 CEST
+- Fix critique : crash au démarrage (`UI_I18N` avant initialisation) qui bloquait le modèle, le menu et les fenêtres
 
 ### 2.3.2 — 22 août 2026, 16:30 CEST
 - Titre de l’application / onglet : « 3D Viewer » uniquement

@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.3.2';
+const APP_VERSION = '2.3.3';
 try { document.title = '3D Viewer'; } catch (_) {}
 let currentLang = 'en';
 try {
@@ -2983,14 +2983,14 @@ function guessTextureName(tex) {
 function updateTexInfo() {
   const el = document.getElementById('mat-tex-info');
   if (!el) return;
-  const t = UI_I18N[currentLang] || UI_I18N.fr;
+  const dict = (typeof UI_I18N === 'object' && UI_I18N) ? (UI_I18N[currentLang] || UI_I18N.fr) : null;
   const entry = getSelectedMaterialEntry();
   const tex = pendingTexture || entry?.material?.map || null;
   if (!tex) {
-    el.textContent = t.tex_none || 'Aucune texture';
+    el.textContent = dict?.tex_none || (currentLang === 'en' ? 'No texture' : 'Aucune texture');
     return;
   }
-  el.textContent = (t.tex_loaded || 'Texture : ') + guessTextureName(tex);
+  el.textContent = (dict?.tex_loaded || (currentLang === 'en' ? 'Texture: ' : 'Texture : ')) + guessTextureName(tex);
 }
 
 document.getElementById('mat-texture')?.addEventListener('change', (e) => {
@@ -3200,13 +3200,15 @@ function renderCustomColors() {
   const box = document.getElementById('custom-colors');
   if (!box) return;
   box.innerHTML = '';
-  const t = UI_I18N[currentLang] || UI_I18N.fr;
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  const tip = isTouch
+    ? (currentLang === 'en' ? ' — long press: delete' : ' — appui long : supprimer')
+    : (currentLang === 'en' ? ' — click: use · right-click: delete' : ' — clic : utiliser · clic droit : supprimer');
   loadCustomColors().forEach((hex) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'swatch';
-    b.title = hex + (isTouch ? (t.swatch_tip_touch || '') : (t.swatch_tip_pc || ''));
+    b.title = hex + tip;
     b.style.background = hex;
     let longTimer = null;
     let longFired = false;
@@ -3294,7 +3296,7 @@ document.getElementById('btn-save-color')?.addEventListener('click', () => {
   renderCustomColors();
   setStatus('Couleur enregistrée : ' + hex);
 });
-renderCustomColors();
+try { renderCustomColors(); } catch (_) {}
 
 
 document.getElementById('btn-apply-mat')?.addEventListener('click', () => applyMaterialsFromUI(false));
