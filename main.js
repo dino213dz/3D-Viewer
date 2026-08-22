@@ -6,7 +6,8 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.3.1';
+const APP_VERSION = '2.3.2';
+try { document.title = '3D Viewer'; } catch (_) {}
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -2395,6 +2396,7 @@ function collectMaterials() {
       if (m.userData._origMap === undefined) {
         m.userData._origMap = m.map || null;
         m.userData._origRepeat = m.map ? m.map.repeat.clone() : null;
+        if (m.map) m.userData._origMapName = guessTextureName(m.map);
       }
     });
   });
@@ -2594,6 +2596,7 @@ function loadMaterialToUI(index) {
   setTex('mat-tex-sx', 'val-tex-sx', rx);
   setTex('mat-tex-sy', 'val-tex-sy', ry);
   setTex('mat-tex-sz', 'val-tex-sz', 1);
+  updateTexInfo();
 }
 
 function ensurePhysical(m) {
@@ -2833,23 +2836,36 @@ canvas.addEventListener('dblclick', (e) => {
   pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   pickRaycaster.setFromCamera(pickPointer, camera);
 
-  // 1) Double-clic sur une lumière : ne PAS ouvrir le panneau (ni si cône caché)
+  // 1) Double-clic sur la lumière (marqueur sphère), pas le cône
+  let hitLight = null;
+  let hitLightDist = Infinity;
+  lights.forEach((entry) => {
+    const marker = entry?.helper?._marker;
+    if (!marker || marker.visible === false) return;
+    const hs = pickRaycaster.intersectObject(marker, true);
+    if (hs.length && hs[0].distance < hitLightDist) {
+      hitLight = entry;
+      hitLightDist = hs[0].distance;
+    }
+  });
+  if (hitLight) {
+    focusLight(hitLight);
+    return;
+  }
+
+  // 2) Double-clic sur un cône : ignorer
   if (lightHelpersVisible) {
     let hitHelper = false;
     lights.forEach((entry) => {
       if (!entry || entry.type === 'AmbientLight' || !entry.helper) return;
-      const objs = [];
-      if (entry.helper.visible) objs.push(entry.helper);
-      if (entry.helper._marker && entry.helper._marker.visible) objs.push(entry.helper._marker);
-      objs.forEach((o) => {
-        const hs = pickRaycaster.intersectObject(o, true);
-        if (hs.length) hitHelper = true;
-      });
+      if (!entry.helper.visible) return;
+      const hs = pickRaycaster.intersectObject(entry.helper, true);
+      if (hs.length) hitHelper = true;
     });
-    if (hitHelper) return; // ignore click on cones
+    if (hitHelper) return;
   }
 
-  // 2) Double-clic sol
+  // 3) Double-clic sol
   const groundHits = [];
   if (grid.visible) groundHits.push(...pickRaycaster.intersectObject(grid, true));
   if (groundPlane.visible) groundHits.push(...pickRaycaster.intersectObject(groundPlane, true));
@@ -2859,13 +2875,27 @@ canvas.addEventListener('dblclick', (e) => {
     return;
   }
 
-  // 3) Double-clic mesh → cadrer
+  // 4) Double-clic mesh → cadrer
   if (!modelHits.length) return;
   const mesh = modelHits[0].object;
   if (!mesh) return;
   fitCameraToObject(mesh);
   setStatus((currentLang === 'en' ? 'Framed: ' : 'Élément cadré : ') + (mesh.name || 'mesh'));
 });
+
+function focusLight(entry) {
+  if (!entry) return;
+  showSection('sec-lights', 'Lumières');
+  lights.forEach((l) => l.card?.classList.remove('light-focused'));
+  if (entry.card) {
+    entry.card.classList.add('light-focused');
+    entry.card.classList.remove('collapsed');
+    const col = entry.card.querySelector('.btn-collapse');
+    if (col) col.textContent = '−';
+    try { entry.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
+  }
+  setStatus((currentLang === 'en' ? 'Light: ' : 'Lumière : ') + (entry.name || entry.type));
+}
 
 
 
@@ -2913,6 +2943,56 @@ function applyTexScaleLive() {
   document.getElementById(id)?.addEventListener('input', applyTexScaleLive);
 });
 
+function applyTexAlphaLive() {
+  const entry = getSelectedMaterialEntry();
+  if (!entry) return;
+  const ta = parseFloat(document.getElementById('mat-tex-alpha')?.value || '1');
+  const baseOp = parseFloat(document.getElementById('mat-opacity')?.value || '1');
+  const list = entry.materials && entry.materials.length ? entry.materials : [entry.material];
+  list.forEach((mat) => {
+    if (!mat) return;
+    mat.userData.texAlpha = ta;
+    if (mat.map) {
+      mat.opacity = baseOp * ta;
+      if (ta < 0.999) mat.transparent = true;
+      mat.needsUpdate = true;
+    }
+  });
+}
+document.getElementById('mat-tex-alpha')?.addEventListener('input', applyTexAlphaLive);
+
+function guessTextureName(tex) {
+  if (!tex) return '';
+  if (tex.userData?.fileName) return tex.userData.fileName;
+  if (tex.name && tex.name !== 'Texture' && tex.name !== '') return tex.name;
+  const img = tex.image || tex.source?.data;
+  if (img && typeof img.src === 'string' && img.src) {
+    const src = img.src;
+    if (src.startsWith('blob:')) return currentLang === 'en' ? 'embedded (blob)' : 'embarquée (blob)';
+    try {
+      const last = decodeURIComponent(src.split('/').pop().split('?')[0] || '');
+      if (last && last.length < 80) return last;
+    } catch (_) {}
+  }
+  const w = img?.width || img?.naturalWidth || 0;
+  const h = img?.height || img?.naturalHeight || 0;
+  if (w && h) return (currentLang === 'en' ? 'embedded' : 'embarquée') + ` (${w}×${h})`;
+  return currentLang === 'en' ? 'embedded' : 'embarquée';
+}
+
+function updateTexInfo() {
+  const el = document.getElementById('mat-tex-info');
+  if (!el) return;
+  const t = UI_I18N[currentLang] || UI_I18N.fr;
+  const entry = getSelectedMaterialEntry();
+  const tex = pendingTexture || entry?.material?.map || null;
+  if (!tex) {
+    el.textContent = t.tex_none || 'Aucune texture';
+    return;
+  }
+  el.textContent = (t.tex_loaded || 'Texture : ') + guessTextureName(tex);
+}
+
 document.getElementById('mat-texture')?.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -2920,8 +3000,11 @@ document.getElementById('mat-texture')?.addEventListener('change', (e) => {
   textureLoader.load(url, (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.name = file.name;
+    tex.userData.fileName = file.name;
     pendingTexture = tex;
-    setStatus(`Texture prête : ${file.name}`);
+    setStatus((currentLang === 'en' ? 'Texture ready: ' : 'Texture prête : ') + file.name);
+    updateTexInfo();
     URL.revokeObjectURL(url);
   });
 });
@@ -2935,7 +3018,8 @@ document.getElementById('btn-clear-tex')?.addEventListener('click', () => {
     entry.material.map = null;
     entry.material.needsUpdate = true;
   }
-  setStatus('Texture retirée.');
+  updateTexInfo();
+  setStatus(currentLang === 'en' ? 'Texture removed.' : 'Texture retirée.');
 });
 
 document.getElementById('btn-reset-tex-scale')?.addEventListener('click', () => {
@@ -2962,42 +3046,116 @@ document.getElementById('btn-reload-tex')?.addEventListener('click', () => {
     }
   });
   loadMaterialToUI(materialEntries.indexOf(entry));
+  updateTexInfo();
   setStatus(currentLang === 'en' ? 'Original texture restored.' : 'Texture d’origine rechargée.');
 });
 
 function textureImageToUrl(tex) {
   if (!tex) return null;
-  const img = tex.image;
+  const img = tex.image || tex.source?.data;
   if (!img) return null;
-  if (typeof img.src === 'string' && img.src) return img.src;
+  if (typeof img.src === 'string' && img.src && !img.src.startsWith('blob:') && !img.src.startsWith('data:')) {
+    return img.src;
+  }
   try {
-    if (img instanceof HTMLCanvasElement) return img.toDataURL();
-    if (img.data) {
+    const w = img.width || img.naturalWidth || img.videoWidth || 0;
+    const h = img.height || img.naturalHeight || img.videoHeight || 0;
+    if (w && h && typeof document !== 'undefined') {
       const c = document.createElement('canvas');
-      c.width = img.width || 256;
-      c.height = img.height || 256;
+      c.width = w;
+      c.height = h;
       const ctx = c.getContext('2d');
-      const id = ctx.createImageData(c.width, c.height);
-      id.data.set(img.data);
-      ctx.putImageData(id, 0, 0);
-      return c.toDataURL();
+      const drawable = (
+        (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap) ||
+        (typeof HTMLImageElement !== 'undefined' && img instanceof HTMLImageElement) ||
+        (typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement) ||
+        (typeof HTMLVideoElement !== 'undefined' && img instanceof HTMLVideoElement) ||
+        (typeof OffscreenCanvas !== 'undefined' && img instanceof OffscreenCanvas)
+      );
+      if (drawable) {
+        ctx.drawImage(img, 0, 0, w, h);
+        try { return c.toDataURL('image/png'); } catch (_) { return null; }
+      }
+      if (img.data) {
+        const id = ctx.createImageData(w, h);
+        const src = img.data;
+        if (src.length >= w * h * 4) {
+          id.data.set(src.subarray ? src.subarray(0, w * h * 4) : src);
+        } else if (src.length >= w * h * 3) {
+          for (let i = 0, j = 0; i < w * h * 3; i += 3, j += 4) {
+            id.data[j] = src[i];
+            id.data[j + 1] = src[i + 1];
+            id.data[j + 2] = src[i + 2];
+            id.data[j + 3] = 255;
+          }
+        } else {
+          return null;
+        }
+        ctx.putImageData(id, 0, 0);
+        return c.toDataURL('image/png');
+      }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('textureImageToUrl', err);
+  }
   return null;
+}
+
+function drawTextureToCanvas(tex, canvas) {
+  if (!tex || !canvas) return false;
+  const img = tex.image || tex.source?.data;
+  if (!img) return false;
+  const w = img.width || img.naturalWidth || 256;
+  const h = img.height || img.naturalHeight || 256;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  try {
+    ctx.drawImage(img, 0, 0, w, h);
+    return true;
+  } catch (_) {
+    if (img.data) {
+      try {
+        const id = ctx.createImageData(w, h);
+        const src = img.data;
+        if (src.length >= w * h * 4) id.data.set(src.subarray ? src.subarray(0, w * h * 4) : src);
+        else if (src.length >= w * h * 3) {
+          for (let i = 0, j = 0; i < w * h * 3; i += 3, j += 4) {
+            id.data[j] = src[i]; id.data[j + 1] = src[i + 1]; id.data[j + 2] = src[i + 2]; id.data[j + 3] = 255;
+          }
+        } else return false;
+        ctx.putImageData(id, 0, 0);
+        return true;
+      } catch (e2) { return false; }
+    }
+  }
+  return false;
 }
 
 function openTexturePreview() {
   const win = document.getElementById('tex-preview-window');
   const img = document.getElementById('tex-preview-img');
+  const canvas = document.getElementById('tex-preview-canvas');
   const empty = document.getElementById('tex-preview-empty');
   const entry = getSelectedMaterialEntry();
-  const url = textureImageToUrl(entry?.material?.map);
-  if (url) {
+  const tex = pendingTexture || entry?.material?.map || null;
+  const url = textureImageToUrl(tex);
+  let shown = false;
+  if (url && img) {
     img.src = url;
     img.classList.remove('hidden');
+    if (canvas) canvas.classList.add('hidden');
     if (empty) empty.classList.add('hidden');
-  } else {
-    img.classList.add('hidden');
+    shown = true;
+  } else if (tex && canvas && drawTextureToCanvas(tex, canvas)) {
+    canvas.classList.remove('hidden');
+    if (img) img.classList.add('hidden');
+    if (empty) empty.classList.add('hidden');
+    shown = true;
+  }
+  if (!shown) {
+    if (img) img.classList.add('hidden');
+    if (canvas) canvas.classList.add('hidden');
     if (empty) empty.classList.remove('hidden');
   }
   win?.classList.remove('hidden');
@@ -3042,11 +3200,13 @@ function renderCustomColors() {
   const box = document.getElementById('custom-colors');
   if (!box) return;
   box.innerHTML = '';
+  const t = UI_I18N[currentLang] || UI_I18N.fr;
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
   loadCustomColors().forEach((hex) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'swatch';
-    b.title = hex + ' — clic : utiliser · appui long : supprimer';
+    b.title = hex + (isTouch ? (t.swatch_tip_touch || '') : (t.swatch_tip_pc || ''));
     b.style.background = hex;
     let longTimer = null;
     let longFired = false;
@@ -3061,11 +3221,18 @@ function renderCustomColors() {
     b.addEventListener('pointerdown', (e) => {
       longFired = false;
       clearLong();
-      longTimer = setTimeout(removeColor, 550);
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+        longTimer = setTimeout(removeColor, 550);
+      }
     });
     b.addEventListener('pointerup', clearLong);
     b.addEventListener('pointerleave', clearLong);
     b.addEventListener('pointercancel', clearLong);
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      removeColor();
+    });
     b.addEventListener('click', (e) => {
       if (longFired) { e.preventDefault(); e.stopPropagation(); return; }
       const c = document.getElementById('mat-color');
@@ -3384,6 +3551,11 @@ const UI_I18N = {
     no: 'Non',
     tex_preview: 'Aperçu texture',
     no_tex: 'Aucune texture.',
+    tex_loaded: 'Texture : ',
+    tex_none: 'Aucune texture',
+    ui_alpha: 'Transparence UI',
+    swatch_tip_pc: ' — clic : utiliser · clic droit : supprimer',
+    swatch_tip_touch: ' — appui long : supprimer',
   },
   en: {
     ready: 'Ready',
@@ -3440,6 +3612,11 @@ const UI_I18N = {
     no: 'No',
     tex_preview: 'Texture preview',
     no_tex: 'No texture.',
+    tex_loaded: 'Texture: ',
+    tex_none: 'No texture',
+    ui_alpha: 'UI transparency',
+    swatch_tip_pc: ' — click: use · right-click: delete',
+    swatch_tip_touch: ' — long press: delete',
   },
 };
 
@@ -3489,6 +3666,7 @@ function applyUITranslations() {
   if (tpt) tpt.textContent = t.tex_preview;
   const tpe = document.getElementById('tex-preview-empty');
   if (tpe) tpe.textContent = t.no_tex;
+  try { updateTexInfo(); } catch (_) {}
   // Settings section titles
   const setMap = currentLang === 'en' ? {
     'set-sec-lang': 'Language', 'set-sec-colors': 'Colors', 'set-sec-ground': 'Default ground',
@@ -3497,6 +3675,7 @@ function applyUITranslations() {
     'lbl-sky-default': 'Default sky', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Color',
     'lbl-set-gmetal': 'Metalness', 'lbl-set-grough': 'Roughness',
     'lbl-set-gizmo': 'Show gizmos', 'lbl-set-cones': 'Show light cones',
+    'lbl-ui-alpha': 'UI transparency',
     'btn-settings-apply': 'Apply', 'btn-settings-save': 'Save', 'btn-settings-reset': 'Reset',
   } : {
     'set-sec-lang': 'Langue', 'set-sec-colors': 'Couleurs', 'set-sec-ground': 'Sol par défaut',
@@ -3505,6 +3684,7 @@ function applyUITranslations() {
     'lbl-sky-default': 'Ciel par défaut', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Couleur',
     'lbl-set-gmetal': 'Métal', 'lbl-set-grough': 'Rugosité',
     'lbl-set-gizmo': 'Afficher les gizmo', 'lbl-set-cones': 'Afficher les cônes de lumière',
+    'lbl-ui-alpha': 'Transparence UI',
     'btn-settings-apply': 'Appliquer', 'btn-settings-save': 'Enregistrer', 'btn-settings-reset': 'Réinitialiser',
   };
   Object.entries(setMap).forEach(([id, txt]) => {
@@ -3859,6 +4039,7 @@ const SETTINGS_DEFAULTS = {
   groundRough: 0.9,
   gizmosDefault: true,
   helpersDefault: true,
+  uiAlpha: 0.66,
 };
 
 const SETTINGS_TIPS = {
@@ -3886,6 +4067,8 @@ const SETTINGS_TIPS = {
     'btn-settings-reset': 'Revenir aux valeurs d’usine',
     'lang-fr': 'Interface en français',
     'lang-en': 'English interface',
+    'lbl-ui-alpha': 'Transparence du menu et des fenêtres (0 = invisible, 1 = opaque).',
+    'set-ui-alpha': 'Transparence des fenêtres et du menu',
   },
   en: {
     'lbl-accent-dark': 'Accent color in dark mode (menus, active buttons).',
@@ -3911,6 +4094,8 @@ const SETTINGS_TIPS = {
     'btn-settings-reset': 'Restore factory defaults',
     'lang-fr': 'Interface en français',
     'lang-en': 'English interface',
+    'lbl-ui-alpha': 'Transparency of the menu and windows (0 = invisible, 1 = opaque).',
+    'set-ui-alpha': 'Window and menu transparency',
   },
 };
 
@@ -3948,10 +4133,19 @@ function applyAccentFromSettings(s) {
   const light = document.body.classList.contains('theme-light');
   const acc = light ? (s.accentLight || SETTINGS_DEFAULTS.accentLight) : (s.accentDark || SETTINGS_DEFAULTS.accentDark);
   const hover = darkerHex(acc);
-  document.documentElement.style.setProperty('--accent', acc);
-  document.documentElement.style.setProperty('--accent-hover', hover);
-  document.body.style.setProperty('--accent', acc);
-  document.body.style.setProperty('--accent-hover', hover);
+  const apply = (el) => {
+    if (!el?.style) return;
+    el.style.setProperty('--accent', acc, 'important');
+    el.style.setProperty('--accent-hover', hover, 'important');
+  };
+  apply(document.documentElement);
+  apply(document.body);
+}
+
+function applyUiAlpha(alpha) {
+  const a = Math.min(1, Math.max(0.2, Number(alpha) || 0.66));
+  document.documentElement.style.setProperty('--ui-alpha', String(a));
+  document.body.style.setProperty('--ui-alpha', String(a));
 }
 
 function fillSettingsForm(s) {
@@ -3974,6 +4168,9 @@ function fillSettingsForm(s) {
   if (vr) vr.textContent = Number(s.groundRough).toFixed(2);
   set('set-gizmo-default', s.gizmosDefault, 'check');
   set('set-helpers-default', s.helpersDefault, 'check');
+  set('set-ui-alpha', s.uiAlpha != null ? s.uiAlpha : 0.66);
+  const va = document.getElementById('val-ui-alpha');
+  if (va) va.textContent = Math.round(Number(s.uiAlpha != null ? s.uiAlpha : 0.66) * 100) + '%';
 }
 
 function readSettingsForm() {
@@ -3987,11 +4184,13 @@ function readSettingsForm() {
     groundRough: parseFloat(document.getElementById('set-ground-rough')?.value || '0.9'),
     gizmosDefault: !!document.getElementById('set-gizmo-default')?.checked,
     helpersDefault: !!document.getElementById('set-helpers-default')?.checked,
+    uiAlpha: parseFloat(document.getElementById('set-ui-alpha')?.value || '0.66'),
   };
 }
 
 function applySettingsToScene(s) {
   applyAccentFromSettings(s);
+  applyUiAlpha(s.uiAlpha);
   GROUND_DEFAULTS.color = s.groundColor;
   GROUND_DEFAULTS.metalness = s.groundMetal;
   GROUND_DEFAULTS.roughness = s.groundRough;
@@ -4029,6 +4228,7 @@ let appSettings = loadAppSettings();
 fillSettingsForm(appSettings);
 rememberDefaultsOnly(appSettings);
 applyAccentFromSettings(appSettings);
+applyUiAlpha(appSettings.uiAlpha);
 
 document.getElementById('menu-settings')?.addEventListener('click', openSettingsWindow);
 document.getElementById('settings-close')?.addEventListener('click', (e) => {
@@ -4067,6 +4267,23 @@ document.getElementById('btn-settings-reset')?.addEventListener('click', () => {
     const span = document.getElementById(id === 'set-ground-metal' ? 'val-set-gmetal' : 'val-set-grough');
     if (span) span.textContent = parseFloat(e.target.value).toFixed(2);
   });
+});
+['set-accent-dark', 'set-accent-light'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    const s = { ...loadAppSettings(), ...readSettingsForm() };
+    appSettings = s;
+    saveAppSettings(s);
+    applyAccentFromSettings(s);
+  });
+});
+document.getElementById('set-ui-alpha')?.addEventListener('input', (e) => {
+  const a = parseFloat(e.target.value);
+  const va = document.getElementById('val-ui-alpha');
+  if (va) va.textContent = Math.round(a * 100) + '%';
+  applyUiAlpha(a);
+  const s = { ...loadAppSettings(), ...readSettingsForm() };
+  appSettings = s;
+  saveAppSettings(s);
 });
 
 // Sections repliables

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>3D Viewer — Visualiseur de modèles 3D</title>
+  <title>3D Viewer</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon.png" type="image/png" sizes="32x32" />
   <link rel="apple-touch-icon" href="favicon.png" />
@@ -92,6 +92,7 @@
         <li class="menu-item">
           <button type="button" class="menu-label"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h12v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Vue</button>
           <ul class="menu-dropdown">
+            <li class="sep menu-sep-top"></li>
             <li><button type="button" id="menu-frame" title="Cadrer l'objet"><svg class="ico" viewBox="0 0 16 16"><path d="M2 5V2h3M11 2h3v3M14 11v3h-3M5 14H2v-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Cadrer l'objet</button></li>
             <li><button type="button" id="menu-frame-visible" title="Cadrer zone visible"><svg class="ico" viewBox="0 0 16 16"><path d="M2 3h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 5h3v6h-3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg> Cadrer zone visible</button></li>
             <li class="sep"></li>
@@ -238,6 +239,7 @@
                 <label style="min-width:100%" data-i18n-prop="texture">Texture</label>
                 <input type="file" id="mat-texture" accept="image/*" />
                 <button type="button" id="btn-clear-tex" class="btn small secondary" style="width:auto;margin:0;">Retirer</button>
+                <p id="mat-tex-info" class="tex-info muted">Aucune texture</p>
               </div>
               <div class="control-row">
                 <label data-i18n-prop="tex_alpha">Alpha texture</label>
@@ -392,7 +394,7 @@
           </div>
           <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.3.1</span> <span id="about-version-status" class="version-status"></span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.3.2</span> <span id="about-version-status" class="version-status"></span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">22 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
@@ -456,6 +458,11 @@
               <div class="control-row">
                 <label id="lbl-sky-default" title="Couleur du ciel utilisée à la réinitialisation.">Ciel par défaut</label>
                 <input type="color" id="set-sky-default" value="#1a1d24" title="Ciel par défaut (réinitialisation)" />
+              </div>
+              <div class="control-row">
+                <label id="lbl-ui-alpha" title="Transparence du menu et des fenêtres.">Transparence UI</label>
+                <input type="range" id="set-ui-alpha" min="0.20" max="1" step="0.01" value="0.66" title="Transparence des fenêtres et du menu" />
+                <span id="val-ui-alpha">66%</span>
               </div>
             </div>
           </div>
@@ -540,6 +547,7 @@
         <div class="floating-body tex-preview-body">
           <p id="tex-preview-empty" class="muted">Aucune texture.</p>
           <img id="tex-preview-img" alt="Texture preview" class="hidden" />
+          <canvas id="tex-preview-canvas" class="hidden"></canvas>
         </div>
       </div>
     </div>

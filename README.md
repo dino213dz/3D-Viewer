@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 22 août 2026, 14:41 CEST  
+**Dernière mise à jour :** 22 août 2026, 16:30 CEST  
 
-**Version :** 2.3.1
+**Version :** 2.3.2
 
 ---
 
@@ -39,7 +39,7 @@
 - Sol : quadrillage, surface plate ou aucun (éditable)
 - Affichage clair / sombre
 - Langues : Français, English (dans Paramètres)
-- Fenêtre Paramètres (accents, ciel, sol, gizmo, cônes, liens GitHub)
+- Fenêtre Paramètres (accents, ciel, sol, gizmo, cônes, transparence UI, liens GitHub)
 - Télécharger depuis Sketchfab
 - Aperçu / alpha / échelle des textures
 - Confirmation avant de quitter ou rafraîchir la page
@@ -47,6 +47,17 @@
 ---
 
 ## Historique des versions
+
+### 2.3.2 — 22 août 2026, 16:30 CEST
+- Titre de l’application / onglet : « 3D Viewer » uniquement
+- Double-clic sur la lumière (sphère), pas le cône → panneau Lumières avec focus
+- Séparateur collé en tête du menu Vue
+- Accents : application live (sans bouton Appliquer), y compris en mode clair
+- Paramètres : contrôle de la transparence du menu et des fenêtres
+- Matériaux : nom de la texture affichée (y compris textures embarquées GLB)
+- Alpha texture appliqué en direct
+- Couleurs enregistrées : clic droit pour supprimer (PC), appui long (mobile)
+- Aperçu texture : chargement des textures embarquées (ImageBitmap / GLB)
 
 ### 2.3.1 — 22 août 2026, 14:41 CEST
 - Fenêtre Paramètres : déplaçable, redimensionnable, boutons − / + / ×, fermeture au clic extérieur
