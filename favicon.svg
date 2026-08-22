@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#16141f"/>
+  <text x="32" y="46" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="30" font-weight="900" fill="#f4f1ff" letter-spacing="-1">3D</text>
+  <!-- V (série V) violet, au-dessus du 3D -->
+  <path d="M12 8 L32 36 L52 8 L42 8 L32 22 L22 8 Z" fill="#7B2BBE"/>
+  <path d="M20 8 L32 24 L44 8 L38 8 L32 16 L26 8 Z" fill="#C084FC"/>
+</svg>

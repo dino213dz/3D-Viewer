@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.2.7';
+const APP_VERSION = '2.3.0';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -173,11 +173,14 @@ controls.target.set(0, 0.8, 0);
 controls.update();
 controls.addEventListener('end', () => scheduleSavePrefs());
 
-// ===== Gizmo axes (style Blender) =====
+// ===== Gizmo axes (style Blender 5 : Z vertical bleu, Y profondeur vert, X rouge) =====
 const axesScene = new THREE.Scene();
 const axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 10);
+const axesRoot = new THREE.Group();
+// Three.js Y-up → Blender Z-up : rotation -90° sur X
+axesRoot.rotation.x = -Math.PI / 2;
 const axesGizmo = new THREE.AxesHelper(1.2);
-axesScene.add(axesGizmo);
+axesRoot.add(axesGizmo);
 function makeAxisLabel(text, color, pos) {
   const c = document.createElement('canvas');
   c.width = 64; c.height = 64;
@@ -195,14 +198,21 @@ function makeAxisLabel(text, color, pos) {
   spr.scale.set(0.45, 0.45, 0.45);
   return spr;
 }
-axesScene.add(makeAxisLabel('X', '#ff4444', new THREE.Vector3(1.35, 0, 0)));
-axesScene.add(makeAxisLabel('Y', '#44ff66', new THREE.Vector3(0, 1.35, 0)));
-axesScene.add(makeAxisLabel('Z', '#4488ff', new THREE.Vector3(0, 0, 1.35)));
+axesRoot.add(makeAxisLabel('X', '#ff4444', new THREE.Vector3(1.35, 0, 0)));
+axesRoot.add(makeAxisLabel('Y', '#44ff66', new THREE.Vector3(0, 1.35, 0)));
+axesRoot.add(makeAxisLabel('Z', '#4488ff', new THREE.Vector3(0, 0, 1.35)));
+axesScene.add(axesRoot);
 
-// Axes dans la scène (origine)
+// Axes dans la scène (origine) — même convention Blender (Z vertical)
+const sceneAxesRoot = new THREE.Group();
+sceneAxesRoot.rotation.x = -Math.PI / 2;
 const sceneAxes = new THREE.AxesHelper(1.5);
 sceneAxes.name = 'sceneAxes';
-scene.add(sceneAxes);
+sceneAxesRoot.add(sceneAxes);
+sceneAxesRoot.add(makeAxisLabel('X', '#ff4444', new THREE.Vector3(1.7, 0, 0)));
+sceneAxesRoot.add(makeAxisLabel('Y', '#44ff66', new THREE.Vector3(0, 1.7, 0)));
+sceneAxesRoot.add(makeAxisLabel('Z', '#4488ff', new THREE.Vector3(0, 0, 1.7)));
+scene.add(sceneAxesRoot);
 renderer.autoClear = false;
 
 
@@ -1618,8 +1628,9 @@ document.getElementById('menu-sky-color')?.addEventListener('focus', (e) => {
 });
 document.getElementById('menu-reset-sky')?.addEventListener('click', () => {
   try { localStorage.removeItem('3dviewer_sky_color'); } catch (_) {}
-  setSkyColor('#1a1d24');
-  setStatus('Couleur du ciel réinitialisée.');
+  const def = (typeof loadAppSettings === 'function' ? loadAppSettings() : null)?.skyDefault || '#1a1d24';
+  setSkyColor(def);
+  setStatus(currentLang === 'en' ? 'Sky color reset.' : 'Couleur du ciel réinitialisée.');
 });
 
 let lightHelpersVisible = true;
@@ -1681,8 +1692,8 @@ function updateDynamicMenuLabels() {
 
 function setGizmosVisible(vis) {
   gizmosVisible = !!vis;
-  if (typeof sceneAxes !== 'undefined' && sceneAxes) sceneAxes.visible = gizmosVisible;
-  if (typeof axesGizmo !== 'undefined' && axesGizmo) axesGizmo.visible = gizmosVisible;
+  if (typeof sceneAxesRoot !== 'undefined' && sceneAxesRoot) sceneAxesRoot.visible = gizmosVisible;
+  if (typeof axesRoot !== 'undefined' && axesRoot) axesRoot.visible = gizmosVisible;
   try { localStorage.setItem('3dviewer_gizmos', gizmosVisible ? '1' : '0'); } catch (_) {}
   updateDynamicMenuLabels();
   setStatus(gizmosVisible ? (currentLang==='en'?'Gizmos shown.':'Gizmo affichés.') : (currentLang==='en'?'Gizmos hidden.':'Gizmo masqués.'));
@@ -2381,6 +2392,10 @@ function collectMaterials() {
         entry.materials.push(m);
       }
       if (!entry.meshes.includes(child)) entry.meshes.push(child);
+      if (m.userData._origMap === undefined) {
+        m.userData._origMap = m.map || null;
+        m.userData._origRepeat = m.map ? m.map.repeat.clone() : null;
+      }
     });
   });
   materialEntries.sort((a, b) => a.baseLabel.localeCompare(b.baseLabel, 'fr', { sensitivity: 'base' }));
@@ -2562,6 +2577,8 @@ function loadMaterialToUI(index) {
   setRange('mat-opacity', 'val-opacity', m.opacity ?? 1);
   setRange('mat-trans', 'val-trans', m.transmission ?? 0);
   setRange('mat-emissive-int', 'val-emissive-int', m.emissiveIntensity ?? 0);
+  const ta = m.userData.texAlpha != null ? m.userData.texAlpha : 1;
+  setRange('mat-tex-alpha', 'val-tex-alpha', ta);
   const tr = document.getElementById('mat-transparent');
   if (tr) tr.checked = !!m.transparent;
   const em = document.getElementById('mat-emissive');
@@ -2595,7 +2612,7 @@ function ensurePhysical(m) {
 function applyToMaterial(m, allValues) {
   const {
     color, metal, rough, opacity, transparent, transmission,
-    emissive, emissiveInt, texSx, texSy, texSz,
+    emissive, emissiveInt, texSx, texSy, texSz, texAlpha,
   } = allValues;
   let mat = m;
   if (transmission > 0.001 && !mat.isMeshPhysicalMaterial) {
@@ -2606,7 +2623,14 @@ function applyToMaterial(m, allValues) {
   if (mat.metalness !== undefined && metal != null) mat.metalness = metal;
   if (mat.roughness !== undefined && rough != null) mat.roughness = rough;
   if (opacity != null) mat.opacity = opacity;
-  mat.transparent = !!(transparent || (opacity != null && opacity < 0.99) || (transmission != null && transmission > 0.001));
+  if (texAlpha != null) {
+    mat.userData.texAlpha = texAlpha;
+    if (mat.map) {
+      mat.opacity = (opacity != null ? opacity : 1) * texAlpha;
+      if (texAlpha < 0.999) mat.transparent = true;
+    }
+  }
+  mat.transparent = !!(transparent || mat.transparent || (opacity != null && opacity < 0.99) || (transmission != null && transmission > 0.001) || (texAlpha != null && texAlpha < 0.999));
   if (mat.transmission !== undefined && transmission != null) mat.transmission = transmission;
   if (emissive && mat.emissive) mat.emissive.set(emissive);
   if (mat.emissiveIntensity !== undefined && emissiveInt != null) mat.emissiveIntensity = emissiveInt;
@@ -2640,6 +2664,7 @@ function readMatUI() {
     texSx: parseFloat(document.getElementById('mat-tex-sx')?.value || '1'),
     texSy: parseFloat(document.getElementById('mat-tex-sy')?.value || '1'),
     texSz: parseFloat(document.getElementById('mat-tex-sz')?.value || '1'),
+    texAlpha: parseFloat(document.getElementById('mat-tex-alpha')?.value || '1'),
   };
 }
 
@@ -2808,37 +2833,20 @@ canvas.addEventListener('dblclick', (e) => {
   pickPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   pickRaycaster.setFromCamera(pickPointer, camera);
 
-  // 1) Double-clic sur une lumière (helper / marker)
-  let bestLight = null;
-  let bestDist = Infinity;
-  lights.forEach((entry) => {
-    if (!entry || entry.type === 'AmbientLight') return;
-    const objs = [];
-    if (entry.helper) objs.push(entry.helper);
-    if (entry.helper?._marker) objs.push(entry.helper._marker);
-    objs.forEach((o) => {
-      const hs = pickRaycaster.intersectObject(o, true);
-      if (hs.length && hs[0].distance < bestDist) {
-        bestDist = hs[0].distance;
-        bestLight = entry;
-      }
+  // 1) Double-clic sur une lumière : ne PAS ouvrir le panneau (ni si cône caché)
+  if (lightHelpersVisible) {
+    let hitHelper = false;
+    lights.forEach((entry) => {
+      if (!entry || entry.type === 'AmbientLight' || !entry.helper) return;
+      const objs = [];
+      if (entry.helper.visible) objs.push(entry.helper);
+      if (entry.helper._marker && entry.helper._marker.visible) objs.push(entry.helper._marker);
+      objs.forEach((o) => {
+        const hs = pickRaycaster.intersectObject(o, true);
+        if (hs.length) hitHelper = true;
+      });
     });
-    // also test light position with a small sphere ray approx via marker
-  });
-  if (bestLight) {
-    showSection('sec-lights', currentLang === 'en' ? 'Lights' : 'Lumières');
-    document.querySelectorAll('.light-card').forEach((c) => c.classList.remove('light-focused'));
-    if (bestLight.card) {
-      bestLight.card.classList.add('light-focused');
-      bestLight.card.classList.remove('collapsed');
-      const body = bestLight.card.querySelector('.light-card-body');
-      if (body) body.style.display = '';
-      const col = bestLight.card.querySelector('.btn-collapse');
-      if (col) col.textContent = '−';
-      bestLight.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-    setStatus((currentLang === 'en' ? 'Light: ' : 'Lumière : ') + (bestLight.name || bestLight.type));
-    return;
+    if (hitHelper) return; // ignore click on cones
   }
 
   // 2) Double-clic sol
@@ -2867,7 +2875,7 @@ document.getElementById('mat-select')?.addEventListener('change', (e) => {
   if (!isNaN(i)) { loadMaterialToUI(i); paintMatSelectSwatch(); }
 });
 
-['mat-metal', 'mat-rough', 'mat-opacity', 'mat-trans', 'mat-emissive-int', 'mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
+['mat-metal', 'mat-rough', 'mat-opacity', 'mat-trans', 'mat-emissive-int', 'mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz', 'mat-tex-alpha'].forEach((id) => {
   const map = {
     'mat-metal': 'val-metal',
     'mat-rough': 'val-rough',
@@ -2877,6 +2885,7 @@ document.getElementById('mat-select')?.addEventListener('change', (e) => {
     'mat-tex-sx': 'val-tex-sx',
     'mat-tex-sy': 'val-tex-sy',
     'mat-tex-sz': 'val-tex-sz',
+    'mat-tex-alpha': 'val-tex-alpha',
   };
   document.getElementById(id)?.addEventListener('input', (e) => {
     const val = document.getElementById(map[id]);
@@ -2927,6 +2936,75 @@ document.getElementById('btn-clear-tex')?.addEventListener('click', () => {
     entry.material.needsUpdate = true;
   }
   setStatus('Texture retirée.');
+});
+
+document.getElementById('btn-reset-tex-scale')?.addEventListener('click', () => {
+  ['mat-tex-sx', 'mat-tex-sy', 'mat-tex-sz'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '1';
+    const val = document.getElementById(id.replace('mat-tex-s', 'val-tex-s'));
+    if (val) val.textContent = '1.00';
+  });
+  applyTexScaleLive();
+  setStatus(currentLang === 'en' ? 'Texture scale reset.' : 'Échelle texture réinitialisée.');
+});
+
+document.getElementById('btn-reload-tex')?.addEventListener('click', () => {
+  const entry = getSelectedMaterialEntry();
+  if (!entry) return;
+  pendingTexture = null;
+  const list = entry.materials || [entry.material];
+  list.forEach((mat) => {
+    if (mat.userData._origMap !== undefined) {
+      mat.map = mat.userData._origMap;
+      if (mat.map && mat.userData._origRepeat) mat.map.repeat.copy(mat.userData._origRepeat);
+      mat.needsUpdate = true;
+    }
+  });
+  loadMaterialToUI(materialEntries.indexOf(entry));
+  setStatus(currentLang === 'en' ? 'Original texture restored.' : 'Texture d’origine rechargée.');
+});
+
+function textureImageToUrl(tex) {
+  if (!tex) return null;
+  const img = tex.image;
+  if (!img) return null;
+  if (typeof img.src === 'string' && img.src) return img.src;
+  try {
+    if (img instanceof HTMLCanvasElement) return img.toDataURL();
+    if (img.data) {
+      const c = document.createElement('canvas');
+      c.width = img.width || 256;
+      c.height = img.height || 256;
+      const ctx = c.getContext('2d');
+      const id = ctx.createImageData(c.width, c.height);
+      id.data.set(img.data);
+      ctx.putImageData(id, 0, 0);
+      return c.toDataURL();
+    }
+  } catch (_) {}
+  return null;
+}
+
+function openTexturePreview() {
+  const win = document.getElementById('tex-preview-window');
+  const img = document.getElementById('tex-preview-img');
+  const empty = document.getElementById('tex-preview-empty');
+  const entry = getSelectedMaterialEntry();
+  const url = textureImageToUrl(entry?.material?.map);
+  if (url) {
+    img.src = url;
+    img.classList.remove('hidden');
+    if (empty) empty.classList.add('hidden');
+  } else {
+    img.classList.add('hidden');
+    if (empty) empty.classList.remove('hidden');
+  }
+  win?.classList.remove('hidden');
+}
+document.getElementById('btn-preview-tex')?.addEventListener('click', openTexturePreview);
+document.getElementById('tex-preview-close')?.addEventListener('click', () => {
+  document.getElementById('tex-preview-window')?.classList.add('hidden');
 });
 
 
@@ -3212,6 +3290,8 @@ const MENU_I18N = {
     'Effacer le modèle': 'Effacer le modèle',
     'Recharger le modèle par défaut': 'Recharger le modèle par défaut',
     'Propriétés du fichier': 'Propriétés du fichier',
+    'Télécharger depuis Sketchfab': 'Télécharger depuis Sketchfab',
+    'Paramètres': 'Paramètres',
     'Langues': 'Langues', 'Aide': 'Aide', 'À propos': 'À propos',
     'Annuler': 'Annuler', 'Refaire': 'Refaire',
     'Couleur du ciel': 'Couleur du ciel',
@@ -3232,6 +3312,8 @@ const MENU_I18N = {
     'Effacer le modèle': 'Clear model',
     'Recharger le modèle par défaut': 'Reload default model',
     'Propriétés du fichier': 'File properties',
+    'Télécharger depuis Sketchfab': 'Download from Sketchfab',
+    'Paramètres': 'Settings',
     'Langues': 'Languages', 'Aide': 'Help', 'À propos': 'About',
     'Annuler': 'Undo', 'Refaire': 'Redo',
     'Couleur du ciel': 'Sky color',
@@ -3264,9 +3346,9 @@ const UI_I18N = {
     properties: 'Propriétés',
     texture_scales: 'Texture & échelles',
     type: 'Type',
-    apply_mat: 'Appliquer au matériau sélectionné',
-    apply_all: 'Appliquer à tous',
-    reset_mats: "Réinitialiser matériaux d'origine",
+    apply_mat: 'Appliquer',
+    apply_all: 'Appliquer à tout',
+    reset_mats: 'Réinitialiser',
     no_model: 'Aucun modèle chargé.',
     no_model_opt: '— aucun modèle —',
     version: 'Version',
@@ -3274,9 +3356,31 @@ const UI_I18N = {
     updated: 'Dernière mise à jour',
     author: 'Auteur',
     desc: '3D Viewer permet de visualiser vos fichiers 3D.',
-    updated_date: '21 août 2026',
+    updated_date: '22 août 2026',
     created_date: '19 août 2026',
     update_available: 'MàJ disponible',
+    metal: 'Métal',
+    rough: 'Rugosité',
+    opacity: 'Opacité',
+    transparent: 'Transparent',
+    transmission: 'Transmission',
+    emissive: 'Émissif',
+    emissive_int: 'Intensité émissive',
+    texture: 'Texture',
+    tex_alpha: 'Alpha texture',
+    scale_x: 'Échelle X',
+    scale_y: 'Échelle Y',
+    scale_z: 'Échelle Z',
+    reset_scale: 'Réinit. échelle',
+    reload_tex: "Texture d'origine",
+    preview_tex: 'Aperçu',
+    settings: 'Paramètres',
+    leave_title: 'Quitter la page ?',
+    leave_msg: 'Vous allez quitter (ou rafraîchir) la page. Le modèle 3D va être oublié. Cependant les modifications seront sauvegardées. Voulez-vous continuer ?',
+    yes: 'Oui',
+    no: 'Non',
+    tex_preview: 'Aperçu texture',
+    no_tex: 'Aucune texture.',
   },
   en: {
     ready: 'Ready',
@@ -3295,9 +3399,9 @@ const UI_I18N = {
     properties: 'Properties',
     texture_scales: 'Texture & scales',
     type: 'Type',
-    apply_mat: 'Apply to selected material',
+    apply_mat: 'Apply',
     apply_all: 'Apply to all',
-    reset_mats: 'Reset original materials',
+    reset_mats: 'Reset',
     no_model: 'No model loaded.',
     no_model_opt: '— no model —',
     version: 'Version',
@@ -3305,9 +3409,31 @@ const UI_I18N = {
     updated: 'Last updated',
     author: 'Author',
     desc: '3D Viewer lets you view your 3D files.',
-    updated_date: 'August 21, 2026',
+    updated_date: 'August 22, 2026',
     created_date: 'August 19, 2026',
     update_available: 'Update available!',
+    metal: 'Metalness',
+    rough: 'Roughness',
+    opacity: 'Opacity',
+    transparent: 'Transparent',
+    transmission: 'Transmission',
+    emissive: 'Emissive',
+    emissive_int: 'Emissive intensity',
+    texture: 'Texture',
+    tex_alpha: 'Texture alpha',
+    scale_x: 'Scale X',
+    scale_y: 'Scale Y',
+    scale_z: 'Scale Z',
+    reset_scale: 'Reset scale',
+    reload_tex: 'Original texture',
+    preview_tex: 'Preview',
+    settings: 'Settings',
+    leave_title: 'Leave this page?',
+    leave_msg: 'You are about to leave (or refresh) the page. The 3D model will be forgotten. Your edits will still be saved. Do you want to continue?',
+    yes: 'Yes',
+    no: 'No',
+    tex_preview: 'Texture preview',
+    no_tex: 'No texture.',
   },
 };
 
@@ -3330,9 +3456,55 @@ function applyUITranslations() {
     if (h) h.textContent = title;
   });
   // Mat groups
-  document.querySelectorAll('.mat-group-colors .mat-group-title').forEach((el) => { el.textContent = t.colors; });
-  document.querySelectorAll('.mat-group-props .mat-group-title').forEach((el) => { el.textContent = t.properties; });
-  document.querySelectorAll('.mat-group-tex .mat-group-title').forEach((el) => { el.textContent = t.texture_scales; });
+  document.querySelectorAll('.mat-group-colors .mat-group-label').forEach((el) => { el.textContent = t.colors; });
+  document.querySelectorAll('.mat-group-props .mat-group-label').forEach((el) => { el.textContent = t.properties; });
+  document.querySelectorAll('.mat-group-tex .mat-group-label').forEach((el) => { el.textContent = t.texture_scales; });
+  document.querySelectorAll('[data-i18n-prop]').forEach((el) => {
+    const k = el.dataset.i18nProp;
+    if (t[k]) el.textContent = t[k];
+  });
+  const btnRs = document.getElementById('btn-reset-tex-scale');
+  if (btnRs) btnRs.textContent = t.reset_scale;
+  const btnRt = document.getElementById('btn-reload-tex');
+  if (btnRt) btnRt.textContent = t.reload_tex;
+  const btnPv = document.getElementById('btn-preview-tex');
+  if (btnPv) btnPv.textContent = t.preview_tex;
+  const stTitle = document.getElementById('settings-title');
+  if (stTitle) stTitle.textContent = t.settings;
+  const leaveT = document.getElementById('leave-title');
+  if (leaveT) leaveT.textContent = t.leave_title;
+  const leaveM = document.getElementById('leave-msg');
+  if (leaveM) leaveM.textContent = t.leave_msg;
+  const ly = document.getElementById('leave-yes');
+  if (ly) ly.textContent = t.yes;
+  const ln = document.getElementById('leave-no');
+  if (ln) ln.textContent = t.no;
+  const tpt = document.getElementById('tex-preview-title');
+  if (tpt) tpt.textContent = t.tex_preview;
+  const tpe = document.getElementById('tex-preview-empty');
+  if (tpe) tpe.textContent = t.no_tex;
+  // Settings section titles
+  const setMap = currentLang === 'en' ? {
+    'set-sec-lang': 'Language', 'set-sec-colors': 'Colors', 'set-sec-ground': 'Default ground',
+    'set-sec-view': 'Default display', 'set-sec-updates': 'Updates',
+    'lbl-accent-dark': 'Accent (dark)', 'lbl-accent-light': 'Accent (light)',
+    'lbl-sky-default': 'Default sky', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Color',
+    'lbl-set-gmetal': 'Metalness', 'lbl-set-grough': 'Roughness',
+    'lbl-set-gizmo': 'Show gizmos', 'lbl-set-cones': 'Show light cones',
+    'btn-settings-save': 'Save', 'btn-settings-reset': 'Reset',
+  } : {
+    'set-sec-lang': 'Langue', 'set-sec-colors': 'Couleurs', 'set-sec-ground': 'Sol par défaut',
+    'set-sec-view': 'Affichage par défaut', 'set-sec-updates': 'Mises à jour',
+    'lbl-accent-dark': 'Accent (sombre)', 'lbl-accent-light': 'Accent (clair)',
+    'lbl-sky-default': 'Ciel par défaut', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Couleur',
+    'lbl-set-gmetal': 'Métal', 'lbl-set-grough': 'Rugosité',
+    'lbl-set-gizmo': 'Afficher les gizmo', 'lbl-set-cones': 'Afficher les cônes de lumière',
+    'btn-settings-save': 'Enregistrer', 'btn-settings-reset': 'Réinitialiser',
+  };
+  Object.entries(setMap).forEach(([id, txt]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  });
   // Common labels by for/id proximity
   const labelPairs = [
     ['#mat-select', t.selection],
@@ -3417,7 +3589,7 @@ function setLanguage(lang) {
     b.setAttribute('aria-current', on ? 'true' : 'false');
   });
   const dict = MENU_I18N[currentLang] || MENU_I18N.fr;
-  document.querySelectorAll('.menu-label, .menu-dropdown button, .menu-hint-label, .ground-btn').forEach((el) => {
+  document.querySelectorAll('.menu-label, .menu-dropdown button, .menu-dropdown a, .menu-hint-label, .ground-btn').forEach((el) => {
     if (el.querySelector('.dyn-label')) return;
     if (el.id && el.id.startsWith('lang-')) return;
     if (el.classList.contains('ground-btn')) {
@@ -3519,8 +3691,23 @@ canvas.addEventListener('pointerup', (e) => {
   const ctx = document.getElementById('ctx-menu');
   if (!ctx) return;
   let lastCtx = { x: 0, y: 0 };
+  let rightDown = null;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button === 2) rightDown = { x: e.clientX, y: e.clientY };
+  });
+  canvas.addEventListener('pointerup', (e) => {
+    if (e.button === 2 && rightDown) {
+      const moved = Math.hypot(e.clientX - rightDown.x, e.clientY - rightDown.y);
+      rightDown.moved = moved > 6;
+    }
+  });
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    const moved = rightDown
+      ? Math.hypot(e.clientX - rightDown.x, e.clientY - rightDown.y) > 6
+      : false;
+    rightDown = null;
+    if (moved) return; // pan avec clic droit : pas de menu
     lastCtx = { x: e.clientX, y: e.clientY };
     updateDynamicMenuLabels();
     ctx.classList.remove('hidden');
@@ -3652,4 +3839,201 @@ document.getElementById('sec-mats')?.addEventListener('click', (e) => {
   if (panel) obs.observe(panel, { attributes: true, attributeFilter: ['class'] });
   sync();
 })();
+
+// ===== Paramètres application =====
+const SETTINGS_KEY = '3dviewer_settings_v1';
+const SETTINGS_DEFAULTS = {
+  accentDark: '#6761FF',
+  accentLight: '#F54927',
+  skyDefault: '#1a1d24',
+  groundMode: 'grid',
+  groundColor: '#2a2d36',
+  groundMetal: 0.05,
+  groundRough: 0.9,
+  gizmosDefault: true,
+  helpersDefault: true,
+};
+
+function loadAppSettings() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    return { ...SETTINGS_DEFAULTS, ...raw };
+  } catch (_) {
+    return { ...SETTINGS_DEFAULTS };
+  }
+}
+
+function saveAppSettings(s) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (_) {}
+}
+
+function darkerHex(hex) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  if (Number.isNaN(n)) return hex;
+  const r = Math.max(0, ((n >> 16) & 255) - 24);
+  const g = Math.max(0, ((n >> 8) & 255) - 24);
+  const b = Math.max(0, (n & 255) - 24);
+  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+function applyAccentFromSettings(s) {
+  const light = document.body.classList.contains('theme-light');
+  const acc = light ? s.accentLight : s.accentDark;
+  document.documentElement.style.setProperty('--accent', acc);
+  document.documentElement.style.setProperty('--accent-hover', darkerHex(acc));
+}
+
+function fillSettingsForm(s) {
+  const set = (id, v, type) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (type === 'check') el.checked = !!v;
+    else el.value = v;
+  };
+  set('set-accent-dark', s.accentDark);
+  set('set-accent-light', s.accentLight);
+  set('set-sky-default', s.skyDefault);
+  set('set-ground-mode', s.groundMode);
+  set('set-ground-color', s.groundColor);
+  set('set-ground-metal', s.groundMetal);
+  set('set-ground-rough', s.groundRough);
+  const vm = document.getElementById('val-set-gmetal');
+  if (vm) vm.textContent = Number(s.groundMetal).toFixed(2);
+  const vr = document.getElementById('val-set-grough');
+  if (vr) vr.textContent = Number(s.groundRough).toFixed(2);
+  set('set-gizmo-default', s.gizmosDefault, 'check');
+  set('set-helpers-default', s.helpersDefault, 'check');
+}
+
+function readSettingsForm() {
+  return {
+    accentDark: document.getElementById('set-accent-dark')?.value || SETTINGS_DEFAULTS.accentDark,
+    accentLight: document.getElementById('set-accent-light')?.value || SETTINGS_DEFAULTS.accentLight,
+    skyDefault: document.getElementById('set-sky-default')?.value || SETTINGS_DEFAULTS.skyDefault,
+    groundMode: document.getElementById('set-ground-mode')?.value || 'grid',
+    groundColor: document.getElementById('set-ground-color')?.value || SETTINGS_DEFAULTS.groundColor,
+    groundMetal: parseFloat(document.getElementById('set-ground-metal')?.value || '0.05'),
+    groundRough: parseFloat(document.getElementById('set-ground-rough')?.value || '0.9'),
+    gizmosDefault: !!document.getElementById('set-gizmo-default')?.checked,
+    helpersDefault: !!document.getElementById('set-helpers-default')?.checked,
+  };
+}
+
+function applySettingsToScene(s, { applyGround = true } = {}) {
+  applyAccentFromSettings(s);
+  GROUND_DEFAULTS.color = s.groundColor;
+  GROUND_DEFAULTS.metalness = s.groundMetal;
+  GROUND_DEFAULTS.roughness = s.groundRough;
+  GROUND_DEFAULTS.mode = s.groundMode;
+  if (applyGround) {
+    resetGround();
+  }
+  const skyEl = document.getElementById('menu-sky-color');
+  if (skyEl) skyEl.defaultValue = s.skyDefault;
+}
+
+let appSettings = loadAppSettings();
+fillSettingsForm(appSettings);
+applyAccentFromSettings(appSettings);
+
+document.getElementById('menu-settings')?.addEventListener('click', () => {
+  fillSettingsForm(loadAppSettings());
+  document.getElementById('settings-window')?.classList.remove('hidden');
+  collapseMenus?.();
+});
+document.getElementById('settings-close')?.addEventListener('click', () => {
+  document.getElementById('settings-window')?.classList.add('hidden');
+});
+document.getElementById('btn-settings-save')?.addEventListener('click', () => {
+  appSettings = readSettingsForm();
+  saveAppSettings(appSettings);
+  applySettingsToScene(appSettings, { applyGround: false });
+  applyAccentFromSettings(appSettings);
+  setGizmosVisible(appSettings.gizmosDefault);
+  setLightHelpersVisible(appSettings.helpersDefault);
+  setStatus(currentLang === 'en' ? 'Settings saved.' : 'Paramètres enregistrés.');
+});
+document.getElementById('btn-settings-reset')?.addEventListener('click', () => {
+  appSettings = { ...SETTINGS_DEFAULTS };
+  saveAppSettings(appSettings);
+  fillSettingsForm(appSettings);
+  applySettingsToScene(appSettings, { applyGround: true });
+  setGizmosVisible(true);
+  setLightHelpersVisible(true);
+  setStatus(currentLang === 'en' ? 'Settings reset.' : 'Paramètres réinitialisés.');
+});
+['set-ground-metal', 'set-ground-rough'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', (e) => {
+    const span = document.getElementById(id === 'set-ground-metal' ? 'val-set-gmetal' : 'val-set-grough');
+    if (span) span.textContent = parseFloat(e.target.value).toFixed(2);
+  });
+});
+['set-accent-dark', 'set-accent-light'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    applyAccentFromSettings(readSettingsForm());
+  });
+});
+
+// Reset sky uses settings default (handler above)
+
+// Apply default gizmos / helpers from settings at startup
+try {
+  const s0 = loadAppSettings();
+  if (s0.gizmosDefault === false) setGizmosVisible(false);
+  if (s0.helpersDefault === false) setLightHelpersVisible(false);
+} catch (_) {}
+
+document.getElementById('menu-theme-light')?.addEventListener('click', () => {
+  setTimeout(() => applyAccentFromSettings(loadAppSettings()), 0);
+});
+
+// ===== Quit / refresh confirmation =====
+let pendingLeave = null; // { type: 'reload' | 'href', href? }
+function showLeaveModal(action) {
+  pendingLeave = action;
+  const t = UI_I18N[currentLang] || UI_I18N.fr;
+  const title = document.getElementById('leave-title');
+  const msg = document.getElementById('leave-msg');
+  if (title) title.textContent = t.leave_title;
+  if (msg) msg.textContent = t.leave_msg;
+  document.getElementById('leave-yes').textContent = t.yes;
+  document.getElementById('leave-no').textContent = t.no;
+  document.getElementById('leave-modal')?.classList.remove('hidden');
+}
+function hideLeaveModal() {
+  pendingLeave = null;
+  document.getElementById('leave-modal')?.classList.add('hidden');
+}
+document.getElementById('leave-no')?.addEventListener('click', hideLeaveModal);
+document.getElementById('leave-yes')?.addEventListener('click', () => {
+  const act = pendingLeave;
+  hideLeaveModal();
+  allowLeave = true;
+  if (!act || act.type === 'reload') location.reload();
+  else if (act.type === 'href' && act.href) location.href = act.href;
+});
+let allowLeave = false;
+window.addEventListener('keydown', (e) => {
+  const k = e.key;
+  if ((k === 'F5') || ((e.ctrlKey || e.metaKey) && (k === 'r' || k === 'R'))) {
+    e.preventDefault();
+    showLeaveModal({ type: 'reload' });
+  }
+});
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a[href]');
+  if (!a) return;
+  if (a.target === '_blank' || a.hasAttribute('download')) return;
+  const href = a.getAttribute('href') || '';
+  if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) return;
+  if (href.startsWith('http') && !href.includes(location.host)) return; // new origin: let target=_blank or skip
+  e.preventDefault();
+  showLeaveModal({ type: 'href', href: a.href });
+}, true);
+
+window.addEventListener('beforeunload', (e) => {
+  if (allowLeave) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 

@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 22 août 2026, 00:07 CEST  
+**Dernière mise à jour :** 22 août 2026, 14:05 CEST  
 
-**Version :** 2.2.7
+**Version :** 2.3.0
 
 ---
 
@@ -33,18 +33,32 @@
 
 ### Autres
 - Double-clic sur un élément pour le cadrer
-- Double-clic sol → éditeur de sol ; double-clic lumière → panneau lumière
-- Menu contextuel (clic droit)
-- Gizmo d’axes (X rouge, Y vert, Z bleu)
+- Double-clic sol → éditeur de sol
+- Menu contextuel (clic droit sans déplacement)
+- Gizmo style Blender 5 (Z vertical bleu, Y vert, X rouge)
 - Sol : quadrillage, surface plate ou aucun (éditable)
 - Affichage clair / sombre
-- Langues : Français, English (défaut English, mémorisée)
-- Rotation des lumières, cônes masquables, lumières renommables et repliables
-- Notification « MAJ disponible ! » si une version plus récente est sur GitHub
+- Langues : Français, English (dans Paramètres)
+- Fenêtre Paramètres (accents, ciel, sol, gizmo, cônes, liens GitHub)
+- Télécharger depuis Sketchfab
+- Aperçu / alpha / échelle des textures
+- Confirmation avant de quitter ou rafraîchir la page
 
 ---
 
 ## Historique des versions
+
+### 2.3.0 — 22 août 2026, 14:05 CEST
+- Clic droit + déplacement : panneau de la vue, sans menu contextuel
+- Gizmo Blender 5 : axe Z vertical (bleu), Y vert, X rouge
+- Textures : alpha, reset scale, recharger texture d’origine, aperçu
+- Propriétés matériaux traduites en français
+- Menu Fichier : Télécharger depuis Sketchfab, Paramètres
+- Langues déplacées dans Paramètres
+- Paramètres : accents sombre/clair, ciel et sol par défaut, gizmo/cônes, liens GitHub
+- Clic sur un cône de lumière n’ouvre plus le panneau Lumières
+- Favicon « 3D » + V violet
+- Confirmation Oui/Non avant de quitter ou rafraîchir la page
 
 ### 2.2.7 — 22 août 2026, 00:07 CEST
 - Fix critique : HTML du panneau Matériaux déséquilibré (contenu Lumières hors fenêtre)
