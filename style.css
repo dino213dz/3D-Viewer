@@ -2377,18 +2377,37 @@ body.theme-light .mat-group {
   min-height: 28px !important;
 }
 .settings-inner {
+  position: relative;
   width: min(420px, calc(100vw - 24px));
-  max-height: min(82vh, 640px);
+  min-width: 300px;
+  min-height: 240px;
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-inner.minimized {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+.settings-inner.minimized .settings-body,
+.settings-inner.minimized .resize-handle {
+  display: none !important;
+}
+.settings-inner.maximized {
+  max-height: none;
 }
 .settings-body {
   overflow-y: auto;
-  max-height: min(70vh, 560px);
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 10px 12px 14px;
 }
 .settings-section {
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   margin-bottom: 10px;
   background: rgba(0,0,0,0.12);
 }
@@ -2396,12 +2415,36 @@ body.theme-light .settings-section {
   border-color: rgba(0,0,0,0.1);
   background: rgba(0,0,0,0.04);
 }
-.settings-section h4 {
-  margin: 0 0 8px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.9;
+.settings-section.collapsed .mat-group-body {
+  display: none !important;
+}
+.settings-lang-btn {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 6px 14px !important;
+  min-height: 30px !important;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  background: transparent !important;
+  color: #e8eaed !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+.settings-lang-btn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+body.theme-light .settings-lang-btn {
+  color: #1a1d24 !important;
+  border-color: rgba(0,0,0,0.2);
+  background: #fff !important;
+}
+body.theme-light .settings-lang-btn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
 }
 .settings-links {
   display: flex;
@@ -2411,6 +2454,11 @@ body.theme-light .settings-section {
 }
 .settings-links a {
   color: var(--accent);
+}
+#settings-inner .resize-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
 }
 .tex-preview-inner {
   width: min(420px, calc(100vw - 24px));

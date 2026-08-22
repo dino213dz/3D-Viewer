@@ -43,9 +43,9 @@
             <li><button type="button" id="menu-open" title="Charger un fichier…"><svg class="ico" viewBox="0 0 16 16"><path d="M2 4h5l1 2h6v7H2V4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Charger un fichier…</button></li>
             <li><button type="button" id="menu-clear" title="Effacer le modèle"><svg class="ico" viewBox="0 0 16 16"><path d="M3 5h10M6 5V3h4v2M5 5l.5 9h5L11 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg> Effacer le modèle</button></li>
             <li><button type="button" id="menu-reload-default" title="Recharger le modèle par défaut"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8a5 5 0 119 2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 4v3h-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg> Recharger le modèle par défaut</button></li>
+            <li><a id="menu-sketchfab" class="menu-link-item" href="https://sketchfab.com/dino213dz" target="_blank" rel="noopener" title="Télécharger depuis Sketchfab"><svg class="ico" viewBox="0 0 16 16"><path d="M2 10l6 3.5L14 10M2 6l6 3.5L14 6M8 2.5L2 6v8l6 3.5L14 14V6L8 2.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Télécharger depuis Sketchfab</a></li>
             <li class="sep"></li>
             <li><button type="button" id="menu-file-props" title="Propriétés du fichier"><svg class="ico" viewBox="0 0 16 16"><path d="M3 2h7l3 3v9H3V2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 2v3h3M5 8h6M5 11h4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Propriétés du fichier</button></li>
-            <li><a id="menu-sketchfab" class="menu-link-item" href="https://sketchfab.com/dino213dz" target="_blank" rel="noopener" title="Télécharger depuis Sketchfab"><svg class="ico" viewBox="0 0 16 16"><path d="M2 10l6 3.5L14 10M2 6l6 3.5L14 6M8 2.5L2 6v8l6 3.5L14 14V6L8 2.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg> Télécharger depuis Sketchfab</a></li>
             <li class="sep"></li>
             <li><button type="button" id="menu-settings" title="Paramètres"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.5l.7 1.6 1.7-.4.9 1.5-1.3 1.1.4 1.7-1.6.6-1.1 1.4-1.5-.9-.4-1.7-1.7-.4.4-1.7-1.1-1.3 1.5-.9 1.1-1.6z" fill="none" stroke="currentColor" stroke-width="1.1"/></svg> Paramètres</button></li>
             <li class="sep menu-sep-foot"></li>
@@ -392,7 +392,7 @@
           </div>
           <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.3.0</span> <span id="about-version-status" class="version-status"></span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.3.1</span> <span id="about-version-status" class="version-status"></span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
           <p><strong>Dernière mise à jour</strong> : <span id="about-updated">22 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
@@ -417,85 +417,114 @@
 
     <!-- Paramètres -->
     <div id="settings-window" class="floating-window hidden">
-      <div class="floating-window-inner settings-inner">
-        <div class="side-titlebar floating-titlebar">
+      <div class="floating-window-inner settings-inner" id="settings-inner">
+        <div class="side-titlebar floating-titlebar" id="settings-titlebar">
           <span class="side-title-text floating-title-text" id="settings-title">Paramètres</span>
           <div class="traffic-lights traffic-lights-right">
-            <button type="button" id="settings-close" class="tl tl-close" title="Close" aria-label="Close"></button>
+            <button type="button" id="settings-min" class="tl tl-min" title="Réduire" aria-label="Réduire"></button>
+            <button type="button" id="settings-max" class="tl tl-max" title="Agrandir" aria-label="Agrandir"></button>
+            <button type="button" id="settings-close" class="tl tl-close" title="Fermer" aria-label="Fermer"></button>
           </div>
         </div>
-        <div class="floating-body settings-body">
-          <div class="settings-section">
-            <h4 id="set-sec-lang">Langue</h4>
-            <div class="btn-row">
-              <button type="button" id="lang-fr" class="lang-btn btn small" data-lang="fr">Français</button>
-              <button type="button" id="lang-en" class="lang-btn btn small active" data-lang="en">English</button>
+        <div class="floating-body settings-body" id="settings-body">
+          <div class="settings-section" data-set-group="lang">
+            <div class="mat-group-header settings-sec-toggle" role="button" tabindex="0" aria-expanded="true">
+              <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+              <strong class="mat-group-label" id="set-sec-lang">Langue</strong>
+            </div>
+            <div class="mat-group-body">
+              <div class="btn-row">
+                <button type="button" id="lang-fr" class="lang-btn settings-lang-btn" data-lang="fr" title="Interface en français">Français</button>
+                <button type="button" id="lang-en" class="lang-btn settings-lang-btn active" data-lang="en" title="English interface">English</button>
+              </div>
             </div>
           </div>
-          <div class="settings-section">
-            <h4 id="set-sec-colors">Couleurs</h4>
-            <div class="control-row">
-              <label id="lbl-accent-dark">Accent (sombre)</label>
-              <input type="color" id="set-accent-dark" value="#6761FF" />
+          <div class="settings-section" data-set-group="colors">
+            <div class="mat-group-header settings-sec-toggle" role="button" tabindex="0" aria-expanded="true">
+              <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+              <strong class="mat-group-label" id="set-sec-colors">Couleurs</strong>
             </div>
-            <div class="control-row">
-              <label id="lbl-accent-light">Accent (clair)</label>
-              <input type="color" id="set-accent-light" value="#F54927" />
-            </div>
-            <div class="control-row">
-              <label id="lbl-sky-default">Ciel par défaut</label>
-              <input type="color" id="set-sky-default" value="#1a1d24" />
-            </div>
-          </div>
-          <div class="settings-section">
-            <h4 id="set-sec-ground">Sol par défaut</h4>
-            <div class="control-row">
-              <label id="lbl-set-gmode">Type</label>
-              <select id="set-ground-mode">
-                <option value="grid">Quadrillage</option>
-                <option value="plane">Surface plate</option>
-                <option value="none">Aucun</option>
-              </select>
-            </div>
-            <div class="control-row">
-              <label id="lbl-set-gcolor">Couleur</label>
-              <input type="color" id="set-ground-color" value="#2a2d36" />
-            </div>
-            <div class="control-row">
-              <label id="lbl-set-gmetal">Métal</label>
-              <input type="range" id="set-ground-metal" min="0" max="1" step="0.01" value="0.05" />
-              <span id="val-set-gmetal">0.05</span>
-            </div>
-            <div class="control-row">
-              <label id="lbl-set-grough">Rugosité</label>
-              <input type="range" id="set-ground-rough" min="0" max="1" step="0.01" value="0.9" />
-              <span id="val-set-grough">0.90</span>
+            <div class="mat-group-body">
+              <div class="control-row">
+                <label id="lbl-accent-dark" title="Couleur d’accent du mode sombre (menus, boutons actifs).">Accent (sombre)</label>
+                <input type="color" id="set-accent-dark" value="#6761FF" title="Accent du thème sombre" />
+              </div>
+              <div class="control-row">
+                <label id="lbl-accent-light" title="Couleur d’accent du mode clair.">Accent (clair)</label>
+                <input type="color" id="set-accent-light" value="#F54927" title="Accent du thème clair" />
+              </div>
+              <div class="control-row">
+                <label id="lbl-sky-default" title="Couleur du ciel utilisée à la réinitialisation.">Ciel par défaut</label>
+                <input type="color" id="set-sky-default" value="#1a1d24" title="Ciel par défaut (réinitialisation)" />
+              </div>
             </div>
           </div>
-          <div class="settings-section">
-            <h4 id="set-sec-view">Affichage par défaut</h4>
-            <div class="control-row">
-              <label id="lbl-set-gizmo">Afficher les gizmo</label>
-              <input type="checkbox" id="set-gizmo-default" checked />
+          <div class="settings-section" data-set-group="ground">
+            <div class="mat-group-header settings-sec-toggle" role="button" tabindex="0" aria-expanded="true">
+              <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+              <strong class="mat-group-label" id="set-sec-ground">Sol par défaut</strong>
             </div>
-            <div class="control-row">
-              <label id="lbl-set-cones">Afficher les cônes de lumière</label>
-              <input type="checkbox" id="set-helpers-default" checked />
+            <div class="mat-group-body">
+              <div class="control-row">
+                <label id="lbl-set-gmode" title="Type de sol au démarrage et à la réinitialisation.">Type</label>
+                <select id="set-ground-mode" title="Type de sol par défaut">
+                  <option value="grid">Quadrillage</option>
+                  <option value="plane">Surface plate</option>
+                  <option value="none">Aucun</option>
+                </select>
+              </div>
+              <div class="control-row">
+                <label id="lbl-set-gcolor" title="Couleur du sol par défaut.">Couleur</label>
+                <input type="color" id="set-ground-color" value="#2a2d36" title="Couleur du sol par défaut" />
+              </div>
+              <div class="control-row">
+                <label id="lbl-set-gmetal" title="Aspect métallique du sol par défaut.">Métal</label>
+                <input type="range" id="set-ground-metal" min="0" max="1" step="0.01" value="0.05" title="Métal du sol par défaut" />
+                <span id="val-set-gmetal">0.05</span>
+              </div>
+              <div class="control-row">
+                <label id="lbl-set-grough" title="Rugosité du sol par défaut.">Rugosité</label>
+                <input type="range" id="set-ground-rough" min="0" max="1" step="0.01" value="0.9" title="Rugosité du sol par défaut" />
+                <span id="val-set-grough">0.90</span>
+              </div>
             </div>
           </div>
-          <div class="settings-section">
-            <h4 id="set-sec-updates">Mises à jour</h4>
-            <p class="settings-links">
-              <a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener">GitHub — 3D Viewer</a>
-              <a href="https://github.com/dino213dz/3D-Viewer/releases" target="_blank" rel="noopener">Releases</a>
-              <a href="https://github.com/dino213dz/3D-Viewer/blob/main/README.md" target="_blank" rel="noopener">README</a>
-            </p>
+          <div class="settings-section" data-set-group="view">
+            <div class="mat-group-header settings-sec-toggle" role="button" tabindex="0" aria-expanded="true">
+              <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+              <strong class="mat-group-label" id="set-sec-view">Affichage par défaut</strong>
+            </div>
+            <div class="mat-group-body">
+              <div class="control-row">
+                <label id="lbl-set-gizmo" title="Afficher les axes (gizmo) au démarrage.">Afficher les gizmo</label>
+                <input type="checkbox" id="set-gizmo-default" checked title="Gizmo visibles par défaut" />
+              </div>
+              <div class="control-row">
+                <label id="lbl-set-cones" title="Afficher les cônes d’aide des lumières au démarrage.">Afficher les cônes de lumière</label>
+                <input type="checkbox" id="set-helpers-default" checked title="Cônes de lumière visibles par défaut" />
+              </div>
+            </div>
+          </div>
+          <div class="settings-section" data-set-group="updates">
+            <div class="mat-group-header settings-sec-toggle" role="button" tabindex="0" aria-expanded="true">
+              <button type="button" class="btn-collapse" title="Réduire / agrandir">−</button>
+              <strong class="mat-group-label" id="set-sec-updates">Mises à jour</strong>
+            </div>
+            <div class="mat-group-body">
+              <p class="settings-links">
+                <a href="https://github.com/dino213dz/3D-Viewer" target="_blank" rel="noopener" title="Dépôt GitHub du projet">GitHub — 3D Viewer</a>
+                <a href="https://github.com/dino213dz/3D-Viewer/releases" target="_blank" rel="noopener" title="Télécharger les versions">Releases</a>
+                <a href="https://github.com/dino213dz/3D-Viewer/blob/main/README.md" target="_blank" rel="noopener" title="Documentation">README</a>
+              </p>
+            </div>
           </div>
           <div class="mat-actions">
-            <button type="button" id="btn-settings-save" class="btn compact">Enregistrer</button>
-            <button type="button" id="btn-settings-reset" class="btn secondary compact">Réinitialiser</button>
+            <button type="button" id="btn-settings-apply" class="btn compact" title="Appliquer ces valeurs à la scène actuelle">Appliquer</button>
+            <button type="button" id="btn-settings-save" class="btn compact" title="Enregistrer comme valeurs par défaut (réinitialisations)">Enregistrer</button>
+            <button type="button" id="btn-settings-reset" class="btn secondary compact" title="Revenir aux valeurs d’usine">Réinitialiser</button>
           </div>
         </div>
+        <div class="resize-handle" id="settings-resize" aria-hidden="true"></div>
       </div>
     </div>
 

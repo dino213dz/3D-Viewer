@@ -14,9 +14,9 @@
 **GitHub :** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Démo / test :** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Création :** 19 août 2026  
-**Dernière mise à jour :** 22 août 2026, 14:05 CEST  
+**Dernière mise à jour :** 22 août 2026, 14:41 CEST  
 
-**Version :** 2.3.0
+**Version :** 2.3.1
 
 ---
 
@@ -47,6 +47,16 @@
 ---
 
 ## Historique des versions
+
+### 2.3.1 — 22 août 2026, 14:41 CEST
+- Fenêtre Paramètres : déplaçable, redimensionnable, boutons − / + / ×, fermeture au clic extérieur
+- Boutons de langue lisibles : actif coloré texte blanc, inactif neutre
+- Chargement des valeurs enregistrées à l’ouverture de Paramètres
+- Enregistrer = défauts uniquement ; Appliquer = scène actuelle
+- Sections Paramètres repliables
+- Télécharger depuis Sketchfab sous « Recharger le modèle par défaut »
+- Accent clair / sombre réellement appliqué (thème clair inclus)
+- Bulles d’aide sur chaque paramètre
 
 ### 2.3.0 — 22 août 2026, 14:05 CEST
 - Clic droit + déplacement : panneau de la vue, sans menu contextuel

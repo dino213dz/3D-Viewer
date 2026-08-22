@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.3.1';
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
@@ -3377,6 +3377,9 @@ const UI_I18N = {
     settings: 'Paramètres',
     leave_title: 'Quitter la page ?',
     leave_msg: 'Vous allez quitter (ou rafraîchir) la page. Le modèle 3D va être oublié. Cependant les modifications seront sauvegardées. Voulez-vous continuer ?',
+    apply_settings: 'Appliquer',
+    save_settings: 'Enregistrer',
+    reset_settings: 'Réinitialiser',
     yes: 'Oui',
     no: 'Non',
     tex_preview: 'Aperçu texture',
@@ -3430,6 +3433,9 @@ const UI_I18N = {
     settings: 'Settings',
     leave_title: 'Leave this page?',
     leave_msg: 'You are about to leave (or refresh) the page. The 3D model will be forgotten. Your edits will still be saved. Do you want to continue?',
+    apply_settings: 'Apply',
+    save_settings: 'Save',
+    reset_settings: 'Reset',
     yes: 'Yes',
     no: 'No',
     tex_preview: 'Texture preview',
@@ -3491,7 +3497,7 @@ function applyUITranslations() {
     'lbl-sky-default': 'Default sky', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Color',
     'lbl-set-gmetal': 'Metalness', 'lbl-set-grough': 'Roughness',
     'lbl-set-gizmo': 'Show gizmos', 'lbl-set-cones': 'Show light cones',
-    'btn-settings-save': 'Save', 'btn-settings-reset': 'Reset',
+    'btn-settings-apply': 'Apply', 'btn-settings-save': 'Save', 'btn-settings-reset': 'Reset',
   } : {
     'set-sec-lang': 'Langue', 'set-sec-colors': 'Couleurs', 'set-sec-ground': 'Sol par défaut',
     'set-sec-view': 'Affichage par défaut', 'set-sec-updates': 'Mises à jour',
@@ -3499,7 +3505,7 @@ function applyUITranslations() {
     'lbl-sky-default': 'Ciel par défaut', 'lbl-set-gmode': 'Type', 'lbl-set-gcolor': 'Couleur',
     'lbl-set-gmetal': 'Métal', 'lbl-set-grough': 'Rugosité',
     'lbl-set-gizmo': 'Afficher les gizmo', 'lbl-set-cones': 'Afficher les cônes de lumière',
-    'btn-settings-save': 'Enregistrer', 'btn-settings-reset': 'Réinitialiser',
+    'btn-settings-apply': 'Appliquer', 'btn-settings-save': 'Enregistrer', 'btn-settings-reset': 'Réinitialiser',
   };
   Object.entries(setMap).forEach(([id, txt]) => {
     const el = document.getElementById(id);
@@ -3634,6 +3640,7 @@ function setLanguage(lang) {
     else if (vs.classList.contains('is-ok')) setVersionStatus('ok');
   }
   try { localStorage.setItem('3dviewer_lang', currentLang); } catch (_) {}
+  applySettingsTips?.();
   setStatus(currentLang === 'en' ? 'Language: English' : 'Langue : Français');
 }
 document.getElementById('lang-fr')?.addEventListener('click', () => setLanguage('fr'));
@@ -3854,6 +3861,67 @@ const SETTINGS_DEFAULTS = {
   helpersDefault: true,
 };
 
+const SETTINGS_TIPS = {
+  fr: {
+    'lbl-accent-dark': 'Couleur d’accent du mode sombre (menus, boutons actifs).',
+    'set-accent-dark': 'Accent du thème sombre',
+    'lbl-accent-light': 'Couleur d’accent du mode clair.',
+    'set-accent-light': 'Accent du thème clair',
+    'lbl-sky-default': 'Couleur du ciel utilisée à la réinitialisation.',
+    'set-sky-default': 'Ciel par défaut (réinitialisation)',
+    'lbl-set-gmode': 'Type de sol au démarrage et à la réinitialisation.',
+    'set-ground-mode': 'Type de sol par défaut',
+    'lbl-set-gcolor': 'Couleur du sol par défaut.',
+    'set-ground-color': 'Couleur du sol par défaut',
+    'lbl-set-gmetal': 'Aspect métallique du sol par défaut.',
+    'set-ground-metal': 'Métal du sol par défaut',
+    'lbl-set-grough': 'Rugosité du sol par défaut.',
+    'set-ground-rough': 'Rugosité du sol par défaut',
+    'lbl-set-gizmo': 'Afficher les axes (gizmo) au démarrage.',
+    'set-gizmo-default': 'Gizmo visibles par défaut',
+    'lbl-set-cones': 'Afficher les cônes d’aide des lumières au démarrage.',
+    'set-helpers-default': 'Cônes de lumière visibles par défaut',
+    'btn-settings-apply': 'Appliquer ces valeurs à la scène actuelle',
+    'btn-settings-save': 'Enregistrer comme valeurs par défaut (réinitialisations)',
+    'btn-settings-reset': 'Revenir aux valeurs d’usine',
+    'lang-fr': 'Interface en français',
+    'lang-en': 'English interface',
+  },
+  en: {
+    'lbl-accent-dark': 'Accent color in dark mode (menus, active buttons).',
+    'set-accent-dark': 'Dark-theme accent',
+    'lbl-accent-light': 'Accent color in light mode.',
+    'set-accent-light': 'Light-theme accent',
+    'lbl-sky-default': 'Sky color used when you reset the sky.',
+    'set-sky-default': 'Default sky (on reset)',
+    'lbl-set-gmode': 'Ground type at startup and on reset.',
+    'set-ground-mode': 'Default ground type',
+    'lbl-set-gcolor': 'Default ground color.',
+    'set-ground-color': 'Default ground color',
+    'lbl-set-gmetal': 'Default ground metalness.',
+    'set-ground-metal': 'Default ground metalness',
+    'lbl-set-grough': 'Default ground roughness.',
+    'set-ground-rough': 'Default ground roughness',
+    'lbl-set-gizmo': 'Show axis gizmos at startup.',
+    'set-gizmo-default': 'Gizmos visible by default',
+    'lbl-set-cones': 'Show light helper cones at startup.',
+    'set-helpers-default': 'Light cones visible by default',
+    'btn-settings-apply': 'Apply these values to the current scene',
+    'btn-settings-save': 'Save as defaults (used on reset)',
+    'btn-settings-reset': 'Restore factory defaults',
+    'lang-fr': 'Interface en français',
+    'lang-en': 'English interface',
+  },
+};
+
+function applySettingsTips() {
+  const tips = SETTINGS_TIPS[currentLang] || SETTINGS_TIPS.fr;
+  Object.entries(tips).forEach(([id, tip]) => {
+    const el = document.getElementById(id);
+    if (el) el.title = tip;
+  });
+}
+
 function loadAppSettings() {
   try {
     const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
@@ -3878,9 +3946,12 @@ function darkerHex(hex) {
 
 function applyAccentFromSettings(s) {
   const light = document.body.classList.contains('theme-light');
-  const acc = light ? s.accentLight : s.accentDark;
+  const acc = light ? (s.accentLight || SETTINGS_DEFAULTS.accentLight) : (s.accentDark || SETTINGS_DEFAULTS.accentDark);
+  const hover = darkerHex(acc);
   document.documentElement.style.setProperty('--accent', acc);
-  document.documentElement.style.setProperty('--accent-hover', darkerHex(acc));
+  document.documentElement.style.setProperty('--accent-hover', hover);
+  document.body.style.setProperty('--accent', acc);
+  document.body.style.setProperty('--accent-hover', hover);
 }
 
 function fillSettingsForm(s) {
@@ -3919,48 +3990,77 @@ function readSettingsForm() {
   };
 }
 
-function applySettingsToScene(s, { applyGround = true } = {}) {
+function applySettingsToScene(s) {
   applyAccentFromSettings(s);
   GROUND_DEFAULTS.color = s.groundColor;
   GROUND_DEFAULTS.metalness = s.groundMetal;
   GROUND_DEFAULTS.roughness = s.groundRough;
   GROUND_DEFAULTS.mode = s.groundMode;
-  if (applyGround) {
-    resetGround();
-  }
-  const skyEl = document.getElementById('menu-sky-color');
-  if (skyEl) skyEl.defaultValue = s.skyDefault;
+  setSkyColor(s.skyDefault);
+  resetGround();
+  setGizmosVisible(s.gizmosDefault);
+  setLightHelpersVisible(s.helpersDefault);
+}
+
+function rememberDefaultsOnly(s) {
+  GROUND_DEFAULTS.color = s.groundColor;
+  GROUND_DEFAULTS.metalness = s.groundMetal;
+  GROUND_DEFAULTS.roughness = s.groundRough;
+  GROUND_DEFAULTS.mode = s.groundMode;
+}
+
+function openSettingsWindow() {
+  const s = loadAppSettings();
+  appSettings = s;
+  fillSettingsForm(s);
+  applySettingsTips();
+  const win = document.getElementById('settings-window');
+  const inner = document.getElementById('settings-inner');
+  win?.classList.remove('hidden');
+  inner?.classList.remove('minimized', 'maximized');
+  collapseMenus?.();
+}
+
+function closeSettingsWindow() {
+  document.getElementById('settings-window')?.classList.add('hidden');
 }
 
 let appSettings = loadAppSettings();
 fillSettingsForm(appSettings);
+rememberDefaultsOnly(appSettings);
 applyAccentFromSettings(appSettings);
 
-document.getElementById('menu-settings')?.addEventListener('click', () => {
-  fillSettingsForm(loadAppSettings());
-  document.getElementById('settings-window')?.classList.remove('hidden');
-  collapseMenus?.();
+document.getElementById('menu-settings')?.addEventListener('click', openSettingsWindow);
+document.getElementById('settings-close')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeSettingsWindow();
 });
-document.getElementById('settings-close')?.addEventListener('click', () => {
-  document.getElementById('settings-window')?.classList.add('hidden');
+document.getElementById('settings-window')?.addEventListener('pointerdown', (e) => {
+  if (e.target === document.getElementById('settings-window')) closeSettingsWindow();
 });
 document.getElementById('btn-settings-save')?.addEventListener('click', () => {
   appSettings = readSettingsForm();
   saveAppSettings(appSettings);
-  applySettingsToScene(appSettings, { applyGround: false });
-  applyAccentFromSettings(appSettings);
-  setGizmosVisible(appSettings.gizmosDefault);
-  setLightHelpersVisible(appSettings.helpersDefault);
-  setStatus(currentLang === 'en' ? 'Settings saved.' : 'Paramètres enregistrés.');
+  rememberDefaultsOnly(appSettings);
+  setStatus(currentLang === 'en'
+    ? 'Defaults saved. Use Apply to update the scene.'
+    : 'Valeurs par défaut enregistrées. Utilisez Appliquer pour la scène.');
+});
+document.getElementById('btn-settings-apply')?.addEventListener('click', () => {
+  appSettings = readSettingsForm();
+  saveAppSettings(appSettings);
+  rememberDefaultsOnly(appSettings);
+  applySettingsToScene(appSettings);
+  setStatus(currentLang === 'en' ? 'Settings applied to the scene.' : 'Paramètres appliqués à la scène.');
 });
 document.getElementById('btn-settings-reset')?.addEventListener('click', () => {
   appSettings = { ...SETTINGS_DEFAULTS };
   saveAppSettings(appSettings);
   fillSettingsForm(appSettings);
-  applySettingsToScene(appSettings, { applyGround: true });
-  setGizmosVisible(true);
-  setLightHelpersVisible(true);
-  setStatus(currentLang === 'en' ? 'Settings reset.' : 'Paramètres réinitialisés.');
+  rememberDefaultsOnly(appSettings);
+  setStatus(currentLang === 'en'
+    ? 'Factory defaults restored (not applied to the scene).'
+    : 'Valeurs d’usine restaurées (non appliquées à la scène).');
 });
 ['set-ground-metal', 'set-ground-rough'].forEach((id) => {
   document.getElementById(id)?.addEventListener('input', (e) => {
@@ -3968,17 +4068,119 @@ document.getElementById('btn-settings-reset')?.addEventListener('click', () => {
     if (span) span.textContent = parseFloat(e.target.value).toFixed(2);
   });
 });
-['set-accent-dark', 'set-accent-light'].forEach((id) => {
-  document.getElementById(id)?.addEventListener('input', () => {
-    applyAccentFromSettings(readSettingsForm());
-  });
+
+// Sections repliables
+document.getElementById('settings-body')?.addEventListener('click', (e) => {
+  const header = e.target.closest?.('.settings-sec-toggle');
+  if (!header) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const group = header.closest('.settings-section');
+  if (!group) return;
+  const collapsed = group.classList.toggle('collapsed');
+  header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  const col = group.querySelector('.btn-collapse');
+  if (col) col.textContent = collapsed ? '+' : '−';
 });
 
-// Reset sky uses settings default (handler above)
+// Drag / resize / min / max
+(function setupSettingsWindowChrome() {
+  const win = document.getElementById('settings-window');
+  const inner = document.getElementById('settings-inner');
+  const bar = document.getElementById('settings-titlebar');
+  const handle = document.getElementById('settings-resize');
+  if (!win || !inner || !bar) return;
+  let prevRect = null;
+  let dragging = false, ox = 0, oy = 0;
+  bar.style.cursor = 'move';
+  bar.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button') || e.target.closest('.tl')) return;
+    if (inner.classList.contains('maximized')) return;
+    dragging = true;
+    const r = inner.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    inner.style.position = 'fixed';
+    inner.style.margin = '0';
+    inner.style.left = r.left + 'px';
+    inner.style.top = r.top + 'px';
+    try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  bar.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const w = inner.offsetWidth;
+    const h = inner.offsetHeight;
+    const x = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - oy));
+    inner.style.left = x + 'px';
+    inner.style.top = y + 'px';
+    inner.style.right = 'auto';
+    inner.style.bottom = 'auto';
+    void w; void h;
+  });
+  bar.addEventListener('pointerup', (e) => {
+    dragging = false;
+    try { bar.releasePointerCapture(e.pointerId); } catch (_) {}
+  });
+  document.getElementById('settings-min')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    inner.classList.toggle('minimized');
+    inner.classList.remove('maximized');
+  });
+  document.getElementById('settings-max')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (inner.classList.contains('maximized')) {
+      inner.classList.remove('maximized');
+      if (prevRect) {
+        inner.style.left = prevRect.left;
+        inner.style.top = prevRect.top;
+        inner.style.width = prevRect.width;
+        inner.style.height = prevRect.height;
+      }
+    } else {
+      const r = inner.getBoundingClientRect();
+      prevRect = { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' };
+      inner.classList.remove('minimized');
+      inner.classList.add('maximized');
+      inner.style.position = 'fixed';
+      inner.style.left = '10px';
+      inner.style.top = 'calc(var(--menu-h) + 10px)';
+      inner.style.width = 'calc(100vw - 20px)';
+      inner.style.height = 'calc(100vh - var(--menu-h) - 20px)';
+      inner.style.margin = '0';
+    }
+  });
+  if (handle) {
+    let resizing = false, sx = 0, sy = 0, sw = 0, sh = 0;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inner.classList.contains('maximized')) return;
+      resizing = true;
+      const r = inner.getBoundingClientRect();
+      sx = e.clientX; sy = e.clientY; sw = r.width; sh = r.height;
+      inner.style.position = 'fixed';
+      inner.style.left = r.left + 'px';
+      inner.style.top = r.top + 'px';
+      inner.style.margin = '0';
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      inner.style.width = Math.max(300, sw + (e.clientX - sx)) + 'px';
+      inner.style.height = Math.max(240, sh + (e.clientY - sy)) + 'px';
+    });
+    handle.addEventListener('pointerup', (e) => {
+      resizing = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+  }
+})();
 
-// Apply default gizmos / helpers from settings at startup
+// Apply default gizmos / helpers / accent at startup
 try {
   const s0 = loadAppSettings();
+  applyAccentFromSettings(s0);
   if (s0.gizmosDefault === false) setGizmosVisible(false);
   if (s0.helpersDefault === false) setLightHelpersVisible(false);
 } catch (_) {}
@@ -3986,6 +4188,10 @@ try {
 document.getElementById('menu-theme-light')?.addEventListener('click', () => {
   setTimeout(() => applyAccentFromSettings(loadAppSettings()), 0);
 });
+
+function applySettingsTipsOnLang() {
+  try { applySettingsTips(); } catch (_) {}
+}
 
 // ===== Quit / refresh confirmation =====
 let pendingLeave = null; // { type: 'reload' | 'href', href? }
