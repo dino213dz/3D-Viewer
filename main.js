@@ -6,12 +6,17 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.3.3';
+const APP_VERSION = '2.4.0';
 try { document.title = '3D Viewer'; } catch (_) {}
 let currentLang = 'en';
 try {
   const savedLang = localStorage.getItem('3dviewer_lang');
-  if (savedLang === 'fr' || savedLang === 'en') currentLang = savedLang;
+  if (savedLang === 'fr' || savedLang === 'en') {
+    currentLang = savedLang;
+  } else {
+    const nav = String(navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    currentLang = nav.startsWith('fr') ? 'fr' : 'en';
+  }
 } catch (_) {}
 const APP_CREATED = '19 août 2026';
 const APP_UPDATED = '20 août 2026';
@@ -552,12 +557,33 @@ function setStatusExtra(text) {
 
 
 function showLoader(text = 'Chargement…') {
-  loaderText.textContent = text;
-  loaderEl.classList.remove('hidden');
+  if (loaderText) loaderText.textContent = text;
+  loaderEl?.classList.remove('hidden');
 }
 
 function hideLoader() {
-  loaderEl.classList.add('hidden');
+  loaderEl?.classList.add('hidden');
+}
+
+let busyTimer = null;
+let busyDepth = 0;
+function beginBusy(text) {
+  busyDepth++;
+  const msg = text || (currentLang === 'en' ? 'Working…' : 'Traitement…');
+  if (loaderText && !busyTimer && loaderEl?.classList.contains('hidden')) {
+    // keep last message if already visible
+  }
+  clearTimeout(busyTimer);
+  busyTimer = setTimeout(() => {
+    showLoader(msg);
+  }, 1000);
+}
+function endBusy() {
+  busyDepth = Math.max(0, busyDepth - 1);
+  if (busyDepth > 0) return;
+  clearTimeout(busyTimer);
+  busyTimer = null;
+  hideLoader();
 }
 
 // ========== Model loading ==========
@@ -1140,18 +1166,23 @@ function doResetCam() {
 let wireframeMode = false;
 
 function toggleWireframe() {
-  wireframeMode = !wireframeMode;
-  updateDynamicMenuLabels?.();
-  if (currentModel) {
-    currentModel.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m) => { m.wireframe = wireframeMode; });
-      }
-    });
+  beginBusy(currentLang === 'en' ? 'Updating wireframe…' : 'Mise à jour du wireframe…');
+  try {
+    wireframeMode = !wireframeMode;
+    updateDynamicMenuLabels?.();
+    if (currentModel) {
+      currentModel.traverse((child) => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((m) => { m.wireframe = wireframeMode; });
+        }
+      });
+    }
+    setStatus(wireframeMode ? (currentLang === 'en' ? 'Wireframe on.' : 'Wireframe activé.') : (currentLang === 'en' ? 'Solid render.' : 'Rendu solid.'));
+    scheduleSavePrefs();
+  } finally {
+    endBusy();
   }
-  setStatus(wireframeMode ? 'Wireframe activé.' : 'Rendu solid.');
-  scheduleSavePrefs();
 }
 
 const sidePanel = document.getElementById('side-panel');
@@ -1640,8 +1671,11 @@ function setLightHelpersVisible(vis) {
   lights.forEach((e) => {
     if (e.helper) e.helper.visible = lightHelpersVisible;
   });
+  try { localStorage.setItem('3dviewer_helpers', lightHelpersVisible ? '1' : '0'); } catch (_) {}
   updateDynamicMenuLabels();
-  setStatus(lightHelpersVisible ? 'Cônes de lumière affichés.' : 'Cônes de lumière masqués.');
+  setStatus(lightHelpersVisible
+    ? (currentLang === 'en' ? 'Light cones shown.' : 'Cônes de lumière affichés.')
+    : (currentLang === 'en' ? 'Light cones hidden.' : 'Cônes de lumière masqués.'));
 }
 document.getElementById('menu-toggle-helpers')?.addEventListener('click', () => {
   setLightHelpersVisible(!lightHelpersVisible);
@@ -1717,8 +1751,6 @@ try {
 try {
   const savedSky = localStorage.getItem('3dviewer_sky_color');
   if (savedSky) setSkyColor(savedSky);
-  const g = localStorage.getItem('3dviewer_gizmos');
-  if (g === '0') setGizmosVisible(false);
 } catch (_) {}
 
 document.getElementById('menu-show-mats')?.addEventListener('click', () => {
@@ -1731,7 +1763,7 @@ document.getElementById('menu-add-directional')?.addEventListener('click', () =>
 document.getElementById('menu-add-point')?.addEventListener('click', () => { showSection('sec-lights', 'Lumières'); addLight('PointLight'); });
 document.getElementById('menu-add-spot')?.addEventListener('click', () => { showSection('sec-lights', 'Lumières'); addLight('SpotLight'); });
 document.getElementById('menu-about')?.addEventListener('click', () => {
-  document.getElementById('about-modal')?.classList.remove('hidden');
+  openAboutWindow();
 });
 document.getElementById('menu-apply-all')?.addEventListener('click', () => {
   showSection('sec-mats', 'Matériaux');
@@ -1797,6 +1829,8 @@ function createLightHelper(light, type) {
 }
 
 function addLight(type) {
+  beginBusy(currentLang === 'en' ? 'Adding light…' : 'Ajout de lumière…');
+  try {
   const id = ++lightIdCounter;
   let light;
 
@@ -1873,6 +1907,9 @@ function addLight(type) {
       },
     });
   }
+  } finally {
+    endBusy();
+  }
 }
 
 function removeLight(id) {
@@ -1943,30 +1980,36 @@ function buildLightCard(entry) {
   `;
 
   if (!isAmbient) {
+    const bp = { x: light.position.x, y: light.position.z, z: light.position.y };
+    const br = {
+      x: light.rotation.x * 180 / Math.PI,
+      y: light.rotation.z * 180 / Math.PI,
+      z: light.rotation.y * 180 / Math.PI,
+    };
     html += `
       <div class="control-row">
         <label>Pos X</label>
-        <input type="number" class="ctrl-px" step="0.1" value="${light.position.x.toFixed(1)}" />
+        <input type="number" class="ctrl-px" step="0.1" value="${bp.x.toFixed(1)}" />
       </div>
       <div class="control-row">
         <label>Pos Y</label>
-        <input type="number" class="ctrl-py" step="0.1" value="${light.position.y.toFixed(1)}" />
+        <input type="number" class="ctrl-py" step="0.1" value="${bp.y.toFixed(1)}" />
       </div>
       <div class="control-row">
         <label>Pos Z</label>
-        <input type="number" class="ctrl-pz" step="0.1" value="${light.position.z.toFixed(1)}" />
+        <input type="number" class="ctrl-pz" step="0.1" value="${bp.z.toFixed(1)}" />
       </div>
       <div class="control-row">
         <label>Rot X °</label>
-        <input type="number" class="ctrl-rx" step="1" value="${(light.rotation.x * 180 / Math.PI).toFixed(0)}" />
+        <input type="number" class="ctrl-rx" step="1" value="${br.x.toFixed(0)}" />
       </div>
       <div class="control-row">
         <label>Rot Y °</label>
-        <input type="number" class="ctrl-ry" step="1" value="${(light.rotation.y * 180 / Math.PI).toFixed(0)}" />
+        <input type="number" class="ctrl-ry" step="1" value="${br.y.toFixed(0)}" />
       </div>
       <div class="control-row">
         <label>Rot Z °</label>
-        <input type="number" class="ctrl-rz" step="1" value="${(light.rotation.z * 180 / Math.PI).toFixed(0)}" />
+        <input type="number" class="ctrl-rz" step="1" value="${br.z.toFixed(0)}" />
       </div>
       <div class="control-row">
         <label>Ombres</label>
@@ -2072,11 +2115,11 @@ function buildLightCard(entry) {
 
   if (!isAmbient) {
     const updatePos = () => {
-      light.position.set(
-        parseFloat(card.querySelector('.ctrl-px').value) || 0,
-        parseFloat(card.querySelector('.ctrl-py').value) || 0,
-        parseFloat(card.querySelector('.ctrl-pz').value) || 0
-      );
+      const px = parseFloat(card.querySelector('.ctrl-px').value) || 0;
+      const py = parseFloat(card.querySelector('.ctrl-py').value) || 0;
+      const pz = parseFloat(card.querySelector('.ctrl-pz').value) || 0;
+      // UI Z = height (Three.js Y), UI Y = depth (Three.js Z) — same as gizmos
+      light.position.set(px, pz, py);
       if (entry.helper) {
         entry.helper.update?.();
         if (entry.helper.position) entry.helper.position.copy(light.position);
@@ -2097,7 +2140,7 @@ function buildLightCard(entry) {
       const rx = (parseFloat(card.querySelector('.ctrl-rx').value) || 0) * Math.PI / 180;
       const ry = (parseFloat(card.querySelector('.ctrl-ry').value) || 0) * Math.PI / 180;
       const rz = (parseFloat(card.querySelector('.ctrl-rz').value) || 0) * Math.PI / 180;
-      light.rotation.set(rx, ry, rz);
+      light.rotation.set(rx, rz, ry);
       // Directional / Spot : réorienter la cible selon la rotation
       if (light.target) {
         const dist = light.position.distanceTo(light.target.position) || 5;
@@ -2594,8 +2637,8 @@ function loadMaterialToUI(index) {
     if (val) val.textContent = Number(v).toFixed(2);
   };
   setTex('mat-tex-sx', 'val-tex-sx', rx);
-  setTex('mat-tex-sy', 'val-tex-sy', ry);
-  setTex('mat-tex-sz', 'val-tex-sz', 1);
+  setTex('mat-tex-sy', 'val-tex-sy', 1);
+  setTex('mat-tex-sz', 'val-tex-sz', ry);
   updateTexInfo();
 }
 
@@ -2645,8 +2688,8 @@ function applyToMaterial(m, allValues) {
   }
   if (mat.map && texSx != null) {
     mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
-    const zx = (texSx || 1) * (texSz || 1);
-    const zy = (texSy || 1) * (texSz || 1);
+    const zx = (texSx || 1) * (texSy || 1);
+    const zy = (texSz || 1) * (texSy || 1);
     mat.map.repeat.set(zx, zy);
     mat.map.needsUpdate = true;
   }
@@ -2676,6 +2719,8 @@ function applyMaterialsFromUI(applyAll = false) {
     setStatus('Aucun modèle chargé.', true);
     return;
   }
+  beginBusy(currentLang === 'en' ? 'Updating materials…' : 'Mise à jour des matériaux…');
+  try {
   const matSnap = snapshotAllMaterials();
   const values = readMatUI();
   const selectedLabel = (() => {
@@ -2747,6 +2792,9 @@ function applyMaterialsFromUI(applyAll = false) {
   pendingTexture = null;
   refreshMaterialSelect(true);
   scheduleSavePrefs();
+  } finally {
+    endBusy();
+  }
 }
 
 
@@ -2934,7 +2982,7 @@ function applyTexScaleLive() {
   list.forEach((mat) => {
     if (!mat?.map) return;
     mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
-    mat.map.repeat.set(sx * sz, sy * sz);
+    mat.map.repeat.set(sx * sy, sz * sy);
     mat.map.needsUpdate = true;
     mat.needsUpdate = true;
   });
@@ -3132,26 +3180,46 @@ function drawTextureToCanvas(tex, canvas) {
   return false;
 }
 
+function getPreviewTexture() {
+  if (pendingTexture) return pendingTexture;
+  const entry = getSelectedMaterialEntry();
+  if (!entry) return null;
+  const mats = entry.materials && entry.materials.length ? entry.materials : [entry.material];
+  for (const m of mats) {
+    if (!m) continue;
+    if (m.map) return m.map;
+    if (m.userData && m.userData._origMap) return m.userData._origMap;
+    if (m.emissiveMap) return m.emissiveMap;
+    if (m.normalMap) return m.normalMap;
+    if (m.roughnessMap) return m.roughnessMap;
+    if (m.metalnessMap) return m.metalnessMap;
+    if (m.aoMap) return m.aoMap;
+  }
+  return null;
+}
+
 function openTexturePreview() {
   const win = document.getElementById('tex-preview-window');
   const img = document.getElementById('tex-preview-img');
   const canvas = document.getElementById('tex-preview-canvas');
   const empty = document.getElementById('tex-preview-empty');
-  const entry = getSelectedMaterialEntry();
-  const tex = pendingTexture || entry?.material?.map || null;
-  const url = textureImageToUrl(tex);
+  const tex = getPreviewTexture();
   let shown = false;
-  if (url && img) {
-    img.src = url;
-    img.classList.remove('hidden');
-    if (canvas) canvas.classList.add('hidden');
-    if (empty) empty.classList.add('hidden');
-    shown = true;
-  } else if (tex && canvas && drawTextureToCanvas(tex, canvas)) {
+  if (tex && canvas && drawTextureToCanvas(tex, canvas)) {
     canvas.classList.remove('hidden');
     if (img) img.classList.add('hidden');
     if (empty) empty.classList.add('hidden');
     shown = true;
+  } else {
+    const url = textureImageToUrl(tex);
+    if (url && img) {
+      img.onload = () => { img.classList.remove('hidden'); if (empty) empty.classList.add('hidden'); };
+      img.src = url;
+      img.classList.remove('hidden');
+      if (canvas) canvas.classList.add('hidden');
+      if (empty) empty.classList.add('hidden');
+      shown = true;
+    }
   }
   if (!shown) {
     if (img) img.classList.add('hidden');
@@ -3159,9 +3227,11 @@ function openTexturePreview() {
     if (empty) empty.classList.remove('hidden');
   }
   win?.classList.remove('hidden');
+  document.getElementById('tex-preview-inner')?.classList.remove('minimized');
 }
 document.getElementById('btn-preview-tex')?.addEventListener('click', openTexturePreview);
-document.getElementById('tex-preview-close')?.addEventListener('click', () => {
+document.getElementById('tex-preview-close')?.addEventListener('click', (e) => {
+  e.stopPropagation();
   document.getElementById('tex-preview-window')?.classList.add('hidden');
 });
 
@@ -3312,13 +3382,33 @@ const aboutModal = document.getElementById('about-modal');
 const aboutVer = document.getElementById('about-version');
 const aboutUpd = document.getElementById('about-updated');
 if (aboutVer) aboutVer.textContent = APP_VERSION;
-if (aboutUpd) aboutUpd.textContent = currentLang === 'en' ? 'August 21, 2026' : '21 août 2026';
+
+function setAboutUpdatedLabel() {
+  const el = document.getElementById('about-updated');
+  if (!el) return;
+  el.textContent = currentLang === 'en' ? 'August 23, 2026' : '23 août 2026';
+}
+setAboutUpdatedLabel();
+
+function setAboutRing(on) {
+  const ring = document.querySelector('.about-logo-ring');
+  if (!ring) return;
+  ring.classList.toggle('is-on', !!on);
+}
+function openAboutWindow() {
+  document.getElementById('about-modal')?.classList.remove('hidden');
+  setAboutRing(true);
+}
 
 document.getElementById('about-close')?.addEventListener('click', () => {
   aboutModal?.classList.add('hidden');
+  setAboutRing(false);
 });
 aboutModal?.addEventListener('click', (e) => {
-  if (e.target === aboutModal) aboutModal.classList.add('hidden');
+  if (e.target === aboutModal) {
+    aboutModal.classList.add('hidden');
+    setAboutRing(false);
+  }
 });
 
 
@@ -3524,8 +3614,8 @@ const UI_I18N = {
     created: 'Date de création',
     updated: 'Dernière mise à jour',
     author: 'Auteur',
-    desc: '3D Viewer permet de visualiser vos fichiers 3D.',
-    updated_date: '22 août 2026',
+    desc: '3D Viewer permet de visualiser vos fichiers 3D aux formats FBX, GLB et GLTF.',
+    updated_date: '23 août 2026',
     created_date: '19 août 2026',
     update_available: 'MàJ disponible',
     metal: 'Métal',
@@ -3585,8 +3675,8 @@ const UI_I18N = {
     created: 'Created',
     updated: 'Last updated',
     author: 'Author',
-    desc: '3D Viewer lets you view your 3D files.',
-    updated_date: 'August 22, 2026',
+    desc: '3D Viewer lets you view your 3D files in FBX, GLB and GLTF formats.',
+    updated_date: 'August 23, 2026',
     created_date: 'August 19, 2026',
     update_available: 'Update available!',
     metal: 'Metalness',
@@ -3724,6 +3814,7 @@ function applyUITranslations() {
   document.querySelectorAll('.about-desc').forEach((el) => { el.textContent = t.desc; });
   const aboutUpd = document.getElementById('about-updated');
   if (aboutUpd) aboutUpd.textContent = t.updated_date;
+  try { setAboutUpdatedLabel(); } catch (_) {}
   // Translate strong labels in about
   document.querySelectorAll('#about-modal .about-body p').forEach((p) => {
     const strong = p.querySelector('strong');
@@ -3838,7 +3929,7 @@ document.getElementById('brand-about')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
   collapseMenus();
-  document.getElementById('about-modal')?.classList.remove('hidden');
+  openAboutWindow();
 });
 
 document.getElementById('menu-edit-ground')?.addEventListener('click', () => {
@@ -4396,12 +4487,101 @@ document.getElementById('settings-body')?.addEventListener('click', (e) => {
   }
 })();
 
+(function setupTexPreviewChrome() {
+  const win = document.getElementById('tex-preview-window');
+  const inner = document.getElementById('tex-preview-inner');
+  const bar = document.getElementById('tex-preview-titlebar');
+  const handle = document.getElementById('tex-preview-resize');
+  if (!win || !inner || !bar) return;
+  let prevRect = null;
+  let dragging = false, ox = 0, oy = 0;
+  bar.style.cursor = 'move';
+  bar.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button') || e.target.closest('.tl')) return;
+    if (inner.classList.contains('maximized')) return;
+    dragging = true;
+    const r = inner.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    inner.style.position = 'fixed';
+    inner.style.margin = '0';
+    inner.style.left = r.left + 'px';
+    inner.style.top = r.top + 'px';
+    try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  bar.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const x = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - oy));
+    inner.style.left = x + 'px';
+    inner.style.top = y + 'px';
+  });
+  bar.addEventListener('pointerup', () => { dragging = false; });
+  document.getElementById('tex-preview-min')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    inner.classList.toggle('minimized');
+    inner.classList.remove('maximized');
+  });
+  document.getElementById('tex-preview-max')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (inner.classList.contains('maximized')) {
+      inner.classList.remove('maximized');
+      if (prevRect) {
+        inner.style.left = prevRect.left;
+        inner.style.top = prevRect.top;
+        inner.style.width = prevRect.width;
+        inner.style.height = prevRect.height;
+      }
+    } else {
+      const r = inner.getBoundingClientRect();
+      prevRect = { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' };
+      inner.classList.remove('minimized');
+      inner.classList.add('maximized');
+      inner.style.position = 'fixed';
+      inner.style.left = '10px';
+      inner.style.top = 'calc(var(--menu-h) + 10px)';
+      inner.style.width = 'calc(100vw - 20px)';
+      inner.style.height = 'calc(100vh - var(--menu-h) - 20px)';
+      inner.style.margin = '0';
+    }
+  });
+  if (handle) {
+    let resizing = false, sx = 0, sy = 0, sw = 0, sh = 0;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inner.classList.contains('maximized')) return;
+      resizing = true;
+      const r = inner.getBoundingClientRect();
+      sx = e.clientX; sy = e.clientY; sw = r.width; sh = r.height;
+      inner.style.position = 'fixed';
+      inner.style.left = r.left + 'px';
+      inner.style.top = r.top + 'px';
+      inner.style.margin = '0';
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      inner.style.width = Math.max(280, sw + (e.clientX - sx)) + 'px';
+      inner.style.height = Math.max(220, sh + (e.clientY - sy)) + 'px';
+    });
+    handle.addEventListener('pointerup', () => { resizing = false; });
+  }
+})();
+
 // Apply default gizmos / helpers / accent at startup
 try {
   const s0 = loadAppSettings();
   applyAccentFromSettings(s0);
-  if (s0.gizmosDefault === false) setGizmosVisible(false);
-  if (s0.helpersDefault === false) setLightHelpersVisible(false);
+  applyUiAlpha(s0.uiAlpha);
+  const g = localStorage.getItem('3dviewer_gizmos');
+  if (g === '0') setGizmosVisible(false);
+  else if (g === '1') setGizmosVisible(true);
+  else if (s0.gizmosDefault === false) setGizmosVisible(false);
+  const h = localStorage.getItem('3dviewer_helpers');
+  if (h === '0') setLightHelpersVisible(false);
+  else if (h === '1') setLightHelpersVisible(true);
+  else if (s0.helpersDefault === false) setLightHelpersVisible(false);
 } catch (_) {}
 
 document.getElementById('menu-theme-light')?.addEventListener('click', () => {

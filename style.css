@@ -915,13 +915,37 @@ svg.ico {
 .about-logo-wrap {
   display: flex;
   justify-content: center;
-  margin: 4px 0 14px;
+  align-items: center;
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 4px auto 14px;
+}
+.about-logo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: conic-gradient(#ff3b3b, #ffb000, #3cff6a, #3b9cff, #b43bff, #ff3b3b);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: none;
+}
+.about-logo-ring.is-on {
+  opacity: 0.9;
+  animation: aboutRingSpin 7s linear infinite;
+}
+@keyframes aboutRingSpin {
+  to { transform: rotate(360deg); }
 }
 .about-logo {
   width: 96px;
   height: 96px;
   border-radius: 50%;
   object-fit: cover;
+  position: relative;
+  z-index: 1;
   border: 2px solid rgba(255,255,255,0.15);
   box-shadow: 0 4px 16px rgba(0,0,0,0.35);
 }
@@ -2463,15 +2487,44 @@ body.theme-light .settings-lang-btn.active {
   bottom: 2px;
 }
 .tex-preview-inner {
-  width: min(420px, calc(100vw - 24px));
+  position: relative;
+  width: min(480px, calc(100vw - 24px));
+  height: min(420px, 70vh);
+  min-width: 280px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tex-preview-inner.minimized {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+.tex-preview-inner.minimized .tex-preview-body,
+.tex-preview-inner.minimized .resize-handle {
+  display: none !important;
+}
+.tex-preview-inner.maximized {
+  max-height: none;
 }
 .tex-preview-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 10px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
-.tex-preview-body img {
+.tex-preview-body img,
+.tex-preview-body canvas {
   max-width: 100%;
-  max-height: 50vh;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 8px;
   background: repeating-conic-gradient(#888 0 25%, #444 0 50%) 0 / 16px 16px;
 }
@@ -2501,9 +2554,6 @@ body.theme-light .settings-lang-btn.active {
   word-break: break-all;
 }
 #tex-preview-canvas {
-  max-width: 100%;
-  height: auto;
   display: block;
-  margin: 0 auto;
 }
 

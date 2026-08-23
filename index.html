@@ -6,7 +6,7 @@
   <title>3D Viewer</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon.png" type="image/png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="favicon.png" />
+  <link rel="apple-touch-icon" href="favicon-180.png" />
   <link rel="stylesheet" href="style.css" />
   <script type="importmap">
   {
@@ -321,8 +321,8 @@
       </section>
     </aside>
 
-    <div id="loader" class="hidden">
-      <div class="spinner"></div>
+    <div id="loader" class="hidden" aria-live="polite">
+      <div class="spinner" role="progressbar" aria-label="Loading"></div>
       <p id="loader-text">Chargement…</p>
     </div>
 
@@ -390,13 +390,14 @@
         <h2 id="about-title">About 3D Viewer</h2>
         <div class="about-body">
           <div class="about-logo-wrap">
+            <div class="about-logo-ring" aria-hidden="true"></div>
             <img src="logo.png" alt="Logo 3D Viewer" class="about-logo" width="96" height="96" />
           </div>
-          <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D.</p>
+          <p class="about-desc">3D Viewer permet de visualiser vos fichiers 3D aux formats FBX, GLB et GLTF.</p>
           <hr />
-          <p><strong>Version</strong> : <span id="about-version">2.3.3</span> <span id="about-version-status" class="version-status"></span></p>
+          <p><strong>Version</strong> : <span id="about-version">2.4.0</span> <span id="about-version-status" class="version-status"></span></p>
           <p><strong>Date de création</strong> : 19 août 2026</p>
-          <p><strong>Dernière mise à jour</strong> : <span id="about-updated">22 août 2026</span></p>
+          <p><strong>Dernière mise à jour</strong> : <span id="about-updated">23 août 2026</span></p>
           <p><strong>Auteur</strong> : CHORFA Allaeddine</p>
           <hr />
           <p class="about-links">
@@ -537,11 +538,13 @@
 
     <!-- Aperçu texture -->
     <div id="tex-preview-window" class="floating-window hidden">
-      <div class="floating-window-inner tex-preview-inner">
-        <div class="side-titlebar floating-titlebar">
+      <div class="floating-window-inner tex-preview-inner" id="tex-preview-inner">
+        <div class="side-titlebar floating-titlebar" id="tex-preview-titlebar">
           <span class="side-title-text floating-title-text" id="tex-preview-title">Aperçu texture</span>
           <div class="traffic-lights traffic-lights-right">
-            <button type="button" id="tex-preview-close" class="tl tl-close" title="Close" aria-label="Close"></button>
+            <button type="button" id="tex-preview-min" class="tl tl-min" title="Réduire" aria-label="Réduire"></button>
+            <button type="button" id="tex-preview-max" class="tl tl-max" title="Agrandir" aria-label="Agrandir"></button>
+            <button type="button" id="tex-preview-close" class="tl tl-close" title="Fermer" aria-label="Fermer"></button>
           </div>
         </div>
         <div class="floating-body tex-preview-body">
@@ -549,6 +552,7 @@
           <img id="tex-preview-img" alt="Texture preview" class="hidden" />
           <canvas id="tex-preview-canvas" class="hidden"></canvas>
         </div>
+        <div class="resize-handle" id="tex-preview-resize" aria-hidden="true"></div>
       </div>
     </div>
 
