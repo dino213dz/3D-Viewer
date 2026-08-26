@@ -14,9 +14,13 @@
 **GitHub:** [dino213dz/3D-Viewer](https://github.com/dino213dz/3D-Viewer)  
 **Demo / test:** [https://3dviewer.h4ckr213dz.workers.dev/](https://3dviewer.h4ckr213dz.workers.dev/)  
 **Created:** 19 August 2026  
-**Last updated:** 23 August 2026, 14:38 CEST  
+**Last updated:** 26 August 2026, 20:09 CEST  
 
-**Version:** 2.4.0
+**Version:** 2.4.1
+
+<p align="center">
+  <img src="preview.png" alt="3D Viewer preview" width="900" />
+</p>
 
 ---
 
@@ -40,6 +44,10 @@
 ---
 
 ## Version history
+
+### 2.4.1 — 26 August 2026, 20:09 CEST
+- App preview screenshot added to the repository and README (below Description, above Features)
+- Help window renamed to “Help” / “Aide”; content fully translated; duplicate control lines removed
 
 ### 2.4.0 — 23 August 2026, 14:38 CEST
 - Light and material axes match the gizmos (Z is up, not Y)

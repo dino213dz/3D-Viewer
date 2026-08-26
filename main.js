@@ -6,7 +6,7 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import JSZip from 'jszip';
 
 // ===== Versioning =====
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 try { document.title = '3D Viewer'; } catch (_) {}
 let currentLang = 'en';
 try {
@@ -3386,7 +3386,7 @@ if (aboutVer) aboutVer.textContent = APP_VERSION;
 function setAboutUpdatedLabel() {
   const el = document.getElementById('about-updated');
   if (!el) return;
-  el.textContent = currentLang === 'en' ? 'August 23, 2026' : '23 août 2026';
+  el.textContent = currentLang === 'en' ? 'August 26, 2026' : '26 août 2026';
 }
 setAboutUpdatedLabel();
 
@@ -3500,7 +3500,84 @@ function loadDefaultModel_legacy_unused() {
   );
 }
 document.getElementById('menu-reload-default')?.addEventListener('click', loadDefaultModel);
+function renderHelpBody() {
+  const body = document.getElementById('help-body');
+  if (!body) return;
+  const en = currentLang === 'en';
+  const t = en
+    ? {
+      shortcuts: 'Keyboard shortcuts',
+      mouse: 'Mouse and touch',
+      formats: 'Supported formats',
+      k1: 'Ctrl/Cmd + Z — Undo',
+      k2: 'Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z — Redo',
+      m1: '<strong>Left drag</strong> — Orbit (rotate around the target)',
+      m2: '<strong>Right drag</strong> — Pan the camera',
+      m3: '<strong>Scroll / middle drag</strong> — Zoom',
+      m4: '<strong>Right click</strong> (without moving) — Context menu',
+      m5: '<strong>Left click</strong> on the model — Material name bubble and select it in the editor',
+      m6: '<strong>Double-click</strong> an object — Frame that element',
+      m7: '<strong>Double-click</strong> the ground — Ground editor',
+      m8: '<strong>Double-click</strong> a light — Light properties',
+      m9: '<strong>1 finger</strong> — Orbit',
+      m10: '<strong>2 fingers</strong> — Zoom / pan',
+      f1: '.glb / .gltf — glTF 2.0 (embedded textures)',
+      f2: '.fbx — FBX',
+      f3: '.zip — archive containing FBX/glTF and textures',
+      readme: 'README.md on GitHub',
+    }
+    : {
+      shortcuts: 'Raccourcis clavier',
+      mouse: 'Souris et tactile',
+      formats: 'Formats pris en charge',
+      k1: 'Ctrl/Cmd + Z — Annuler',
+      k2: 'Ctrl/Cmd + Y ou Ctrl/Cmd + Shift + Z — Refaire',
+      m1: '<strong>Clic gauche glissé</strong> — Orbite (rotation autour de la cible)',
+      m2: '<strong>Clic droit glissé</strong> — Déplacer la caméra',
+      m3: '<strong>Molette / clic milieu glissé</strong> — Zoom',
+      m4: '<strong>Clic droit</strong> (sans bouger) — Menu contextuel',
+      m5: '<strong>Clic gauche</strong> sur le modèle — Bulle du matériau et sélection dans l’éditeur',
+      m6: '<strong>Double-clic</strong> sur un objet — Cadrer l’élément',
+      m7: '<strong>Double-clic</strong> sur le sol — Éditeur du sol',
+      m8: '<strong>Double-clic</strong> sur une lumière — Propriétés de la lumière',
+      m9: '<strong>1 doigt</strong> — Orbite',
+      m10: '<strong>2 doigts</strong> — Zoom / déplacement',
+      f1: '.glb / .gltf — glTF 2.0 (textures embarquées)',
+      f2: '.fbx — FBX',
+      f3: '.zip — archive contenant FBX/glTF et textures',
+      readme: 'README.md sur GitHub',
+    };
+  body.innerHTML = `
+    <p><strong>${t.shortcuts}</strong></p>
+    <ul class="help-list">
+      <li>${t.k1}</li>
+      <li>${t.k2}</li>
+    </ul>
+    <p><strong>${t.mouse}</strong></p>
+    <ul class="help-list">
+      <li>${t.m1}</li>
+      <li>${t.m2}</li>
+      <li>${t.m3}</li>
+      <li>${t.m4}</li>
+      <li>${t.m5}</li>
+      <li>${t.m6}</li>
+      <li>${t.m7}</li>
+      <li>${t.m8}</li>
+      <li>${t.m9}</li>
+      <li>${t.m10}</li>
+    </ul>
+    <p><strong>${t.formats}</strong></p>
+    <ul class="help-list">
+      <li>${t.f1}</li>
+      <li>${t.f2}</li>
+      <li>${t.f3}</li>
+    </ul>
+    <p><a class="about-link" href="https://github.com/dino213dz/3D-Viewer/blob/main/README.md" target="_blank" rel="noopener">${t.readme}</a></p>
+  `;
+}
+
 document.getElementById('menu-help')?.addEventListener('click', () => {
+  renderHelpBody();
   document.getElementById('help-modal')?.classList.remove('hidden');
 });
 document.getElementById('help-close')?.addEventListener('click', () => {
@@ -3598,7 +3675,7 @@ const UI_I18N = {
     file_props: 'Propriétés du fichier',
     load_file: 'Charger un fichier',
     about: 'À propos de 3D Viewer',
-    help: 'Aide — 3D Viewer',
+    help: 'Aide',
     selection: 'Sélection',
     colors: 'Couleurs',
     color: 'Couleur',
@@ -3615,7 +3692,7 @@ const UI_I18N = {
     updated: 'Dernière mise à jour',
     author: 'Auteur',
     desc: '3D Viewer permet de visualiser vos fichiers 3D aux formats FBX, GLB et GLTF.',
-    updated_date: '23 août 2026',
+    updated_date: '26 août 2026',
     created_date: '19 août 2026',
     update_available: 'MàJ disponible',
     metal: 'Métal',
@@ -3658,7 +3735,7 @@ const UI_I18N = {
     file_props: 'File properties',
     load_file: 'Open file',
     about: 'About 3D Viewer',
-    help: 'Help — 3D Viewer',
+    help: 'Help',
     update_available: 'Update available',
     selection: 'Selection',
     colors: 'Colors',
@@ -3676,7 +3753,7 @@ const UI_I18N = {
     updated: 'Last updated',
     author: 'Author',
     desc: '3D Viewer lets you view your 3D files in FBX, GLB and GLTF formats.',
-    updated_date: 'August 23, 2026',
+    updated_date: 'August 26, 2026',
     created_date: 'August 19, 2026',
     update_available: 'Update available!',
     metal: 'Metalness',
@@ -3808,6 +3885,7 @@ function applyUITranslations() {
   if (aboutH) aboutH.textContent = t.about;
   const helpH = document.getElementById('help-title') || document.querySelector('#help-modal h2');
   if (helpH) helpH.textContent = t.help;
+  try { renderHelpBody(); } catch (_) {}
   const badge = document.getElementById('about-update-badge');
   if (badge && !badge.classList.contains('hidden')) badge.textContent = t.update_available || badge.textContent;
 
